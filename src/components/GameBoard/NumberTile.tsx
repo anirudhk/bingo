@@ -18,9 +18,9 @@ export const NumberTile: React.FC<NumberTileProps> = ({
   size = 'medium'
 }) => {
   const sizeClasses = {
-    small: 'w-10 h-10 text-sm sm:w-12 sm:h-12 sm:text-lg',
-    medium: 'w-12 h-12 text-base sm:w-16 sm:h-16 sm:text-xl',
-    large: 'w-14 h-14 text-lg sm:w-20 sm:h-20 sm:text-2xl'
+    small: 'w-8 h-8 text-xs sm:w-10 sm:h-10 sm:text-sm',
+    medium: 'w-10 h-10 text-sm sm:w-12 sm:h-12 sm:text-base',
+    large: 'w-12 h-12 text-base sm:w-14 sm:h-14 sm:text-lg'
   };
 
   const baseClasses = `

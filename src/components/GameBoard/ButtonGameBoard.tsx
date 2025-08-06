@@ -357,7 +357,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
   };
 
   const gridContainerClasses = `
-    inline-grid gap-1 sm:gap-2 p-2 sm:p-4 bg-gray-50 rounded-xl shadow-inner
+    inline-grid gap-0.5 sm:gap-1 p-1 sm:p-3 bg-gray-50 rounded-xl shadow-inner
     ${config.gridSize === 3 ? 'grid-cols-5' : config.gridSize === 4 ? 'grid-cols-7' : 'grid-cols-9'}
   `;
 
@@ -402,7 +402,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
                   
                   if (!tile) {
                     return (
-                      <div key={`empty-${row}-${col}`} className="w-12 h-12 sm:w-16 sm:h-16"></div>
+                      <div key={`empty-${row}-${col}`} className="w-10 h-10 sm:w-12 sm:h-12"></div>
                     );
                   }
                   

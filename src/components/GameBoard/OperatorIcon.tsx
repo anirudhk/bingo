@@ -28,14 +28,14 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
     return null;
   }
   const sizeClasses = {
-    small: 'w-5 h-5 text-xs sm:w-6 sm:h-6',
-    medium: 'w-6 h-6 text-xs sm:w-8 sm:h-8 sm:text-sm',
-    large: 'w-7 h-7 text-sm sm:w-10 sm:h-10 sm:text-base'
+    small: 'w-4 h-4 text-xs sm:w-5 sm:h-5',
+    medium: 'w-5 h-5 text-xs sm:w-6 sm:h-6 sm:text-xs',
+    large: 'w-6 h-6 text-xs sm:w-7 sm:h-7 sm:text-sm'
   };
 
   const positionClasses = {
-    horizontal: 'mx-0.5 sm:mx-1',
-    vertical: 'my-0.5 sm:my-1'
+    horizontal: 'mx-0.5',
+    vertical: 'my-0.5'
   };
 
   const baseClasses = `
