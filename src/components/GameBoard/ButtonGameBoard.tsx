@@ -193,7 +193,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
       case 3:
         return 'large';
       case 4:
-        return 'medium';
+        return 'small';
       case 5:
         return 'small';
       default:
@@ -206,7 +206,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
       case 3:
         return 'large';
       case 4:
-        return 'medium';
+        return 'small';
       case 5:
         return 'small';
       default:
@@ -316,7 +316,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     if (col >= config.gridSize - 1) return null;
 
     return (
-      <div className="flex flex-col items-center justify-center space-y-2">
+      <div className="flex flex-col items-center justify-center space-y-1">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`h-${row}-${col}-${operator}`}
@@ -338,7 +338,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     if (row >= config.gridSize - 1) return null;
 
     return (
-      <div className="flex items-center justify-center space-x-2">
+      <div className="flex items-center justify-center space-x-1">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`v-${row}-${col}-${operator}`}
@@ -357,7 +357,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
   };
 
   const gridContainerClasses = `
-    inline-grid gap-1 sm:gap-1.5 p-2 sm:p-3 bg-gray-50 rounded-xl shadow-inner
+    inline-grid gap-0.5 sm:gap-0.5 p-1 sm:p-1 bg-gray-50 rounded-xl shadow-inner
     ${config.gridSize === 3 ? 'grid-cols-5' : config.gridSize === 4 ? 'grid-cols-7' : 'grid-cols-9'}
   `;
 
@@ -394,9 +394,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
         <TargetDisplay currentTarget={currentTarget} round={currentRound} totalRounds={totalRounds} />
 
         {/* Game Grid */}
-        <div className="flex justify-center mb-2 sm:mb-4 px-1 sm:px-0 flex-1 overflow-hidden">
+        <div className="flex justify-center mb-2 sm:mb-4 px-0 flex-1 overflow-hidden">
           <motion.div
-            className={`${gridContainerClasses} max-h-full`}
+            className={`${gridContainerClasses} max-h-full max-w-full`}
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}

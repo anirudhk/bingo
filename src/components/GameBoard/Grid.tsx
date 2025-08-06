@@ -39,13 +39,10 @@ export const Grid: React.FC<GridProps> = ({
     const gridElement = document.getElementById('game-grid');
     if (!gridElement) return;
 
-    // Add touch event listeners
     gridElement.addEventListener('touchstart', onTouchStart, { passive: false });
     gridElement.addEventListener('touchmove', onTouchMove, { passive: false });
     gridElement.addEventListener('touchend', onTouchEnd, { passive: false });
     gridElement.addEventListener('touchcancel', onTouchCancel, { passive: false });
-
-    // Add mouse event listeners for desktop testing
     gridElement.addEventListener('mousedown', onMouseDown, { passive: false });
     gridElement.addEventListener('mousemove', onMouseMove, { passive: false });
     gridElement.addEventListener('mouseup', onMouseUp, { passive: false });
@@ -88,11 +85,7 @@ export const Grid: React.FC<GridProps> = ({
   };
 
   const isOperatorSelected = (_row: number, _col: number, _position: 'horizontal' | 'vertical', operator: string): boolean => {
-    // Check if this specific operator instance is part of the selected path
-    
-    // Only highlight operators when we have a valid path and this specific operator is selected
     const isSelected = selectedPath.length > 1 && selectedOperators.includes(operator);
-    
     return isSelected;
   };
 
@@ -100,16 +93,17 @@ export const Grid: React.FC<GridProps> = ({
     return config.availableOperators.length > 0;
   };
 
+  // Renders STACKED operators (for between columns in same row)
   const renderHorizontalOperators = (row: number, col: number) => {
     if (col >= gridSize - 1) return null;
 
     return (
-      <div className="flex flex-col items-center justify-center space-y-2">
+      <div className="flex flex-col items-center justify-center space-y-1">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`h-${row}-${col}-${operator}`}
             operator={operator as '+' | '-' | '*'}
-            position="vertical"
+            position="horizontal"
             isSelected={isOperatorSelected(row, col, 'horizontal', operator)}
             isAvailable={isOperatorAvailable(row, col, 'horizontal')}
             size={getOperatorSize()}
@@ -121,16 +115,17 @@ export const Grid: React.FC<GridProps> = ({
     );
   };
 
+  // Renders SIDE-BY-SIDE operators (for between rows in same column)
   const renderVerticalOperators = (row: number, col: number) => {
     if (row >= gridSize - 1) return null;
 
     return (
-      <div className="flex items-center justify-center space-x-2">
+      <div className="flex items-center justify-center space-x-1">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`v-${row}-${col}-${operator}`}
             operator={operator as '+' | '-' | '*'}
-            position="horizontal"
+            position="vertical"
             isSelected={isOperatorSelected(row, col, 'vertical', operator)}
             isAvailable={isOperatorAvailable(row, col, 'vertical')}
             size={getOperatorSize()}
@@ -143,8 +138,9 @@ export const Grid: React.FC<GridProps> = ({
   };
 
   const gridContainerClasses = `
-    inline-grid gap-2 p-4 bg-gray-50 rounded-xl shadow-inner
+    inline-grid
     ${gridSize === 3 ? 'grid-cols-5' : gridSize === 4 ? 'grid-cols-7' : 'grid-cols-9'}
+    gap-2 p-4 bg-gray-50 rounded-xl shadow-inner
   `;
 
   return (
@@ -155,25 +151,28 @@ export const Grid: React.FC<GridProps> = ({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      {Array.from({ length: gridSize }, (_, row) => (
+      {Array.from({ length: gridSize * 2 - 1 }, (_, row) => (
         <React.Fragment key={`row-${row}`}>
-          {Array.from({ length: gridSize }, (_, col) => {
-            const tileIndex = row * gridSize + col;
-            const tile = tiles[tileIndex];
-            
-            // Add null check to prevent undefined tile error
-            if (!tile) {
+          {Array.from({ length: gridSize * 2 - 1 }, (_, col) => {
+            const isTileRow = row % 2 === 0;
+            const isTileCol = col % 2 === 0;
+
+            if (isTileRow && isTileCol) {
+              const tileRow = row / 2;
+              const tileCol = col / 2;
+              const tileIndex = tileRow * gridSize + tileCol;
+              const tile = tiles[tileIndex];
+
+              if (!tile) {
+                return (
+                  <div key={`empty-${tileRow}-${tileCol}`} className="w-16 h-16"></div>
+                );
+              }
+
+              const pathIndex = selectedPath.findIndex(t => t.id === tile.id);
+
               return (
-                <div key={`empty-${row}-${col}`} className="w-16 h-16"></div>
-              );
-            }
-            
-            const pathIndex = selectedPath.findIndex(t => t.id === tile.id);
-            
-            return (
-              <React.Fragment key={`cell-${row}-${col}`}>
-                {/* Render tile */}
-                <div className="flex items-center justify-center">
+                <div key={`tile-${tileRow}-${tileCol}`} className="flex items-center justify-center">
                   <NumberTile
                     tile={tile}
                     isSelected={tile.selected}
@@ -182,31 +181,27 @@ export const Grid: React.FC<GridProps> = ({
                     size={getTileSize()}
                   />
                 </div>
-                
-                {/* Render horizontal operators (except for last column) */}
-                {col < gridSize - 1 && (
-                  <div className="flex items-center justify-center">
-                    {renderHorizontalOperators(row, col)}
-                  </div>
-                )}
-              </React.Fragment>
-            );
+              );
+            } else if (isTileRow && !isTileCol) {
+              const tileRow = row / 2;
+              const opCol = (col - 1) / 2;
+              return (
+                <div key={`h-op-${tileRow}-${opCol}`} className="flex items-center justify-center">
+                  {renderHorizontalOperators(tileRow, opCol)}
+                </div>
+              );
+            } else if (!isTileRow && isTileCol) {
+              const opRow = (row - 1) / 2;
+              const tileCol = col / 2;
+              return (
+                <div key={`v-op-${opRow}-${tileCol}`} className="flex items-center justify-center">
+                  {renderVerticalOperators(opRow, tileCol)}
+                </div>
+              );
+            } else {
+              return <div key={`empty-space-${row}-${col}`}></div>;
+            }
           })}
-          
-          {/* Render vertical operators row (except for last row) */}
-          {row < gridSize - 1 && (
-            <>
-              {Array.from({ length: gridSize }, (_, col) => (
-                <React.Fragment key={`v-operators-${row}-${col}`}>
-                  <div className="flex items-center justify-center">
-                    {renderVerticalOperators(row, col)}
-                  </div>
-                  {/* Empty space between vertical operators */}
-                  {col < gridSize - 1 && <div></div>}
-                </React.Fragment>
-              ))}
-            </>
-          )}
         </React.Fragment>
       ))}
     </motion.div>

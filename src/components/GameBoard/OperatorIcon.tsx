@@ -22,27 +22,41 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
   col,
   onClick
 }) => {
-  // Ensure operator is valid
   if (!operator || !['+', '-', '*'].includes(operator)) {
     console.error('Invalid operator:', operator, 'type:', typeof operator, 'length:', operator?.length);
     return null;
   }
-  const sizeClasses = {
-    small: 'w-6 h-6 text-xs sm:w-7 sm:h-7',
-    medium: 'w-7 h-7 text-xs sm:w-8 sm:h-8 sm:text-xs',
-    large: 'w-8 h-8 text-xs sm:w-9 sm:h-9 sm:text-sm'
+
+  const getSizeClasses = () => {
+    if (position === 'horizontal') {
+      // For row operators (stacked vertically): wide and short rectangles
+      switch (size) {
+        case 'small': return 'w-4 h-8 text-xs sm:w-14 sm:h-5';
+        case 'medium': return 'w-4 h-12 text-xs sm:w-16 sm:h-6 sm:text-xs';
+        case 'large': return 'w-6 h-12 text-xs sm:w-18 sm:h-7 sm:text-sm';
+        default: return 'w-4 h-12 text-xs sm:w-16 sm:h-6';
+      }
+    } else {
+      // For column operators (side by side): tall and narrow rectangles
+      switch (size) {
+        case 'small': return 'w-8 h-4 text-xs sm:w-5 sm:h-14';
+        case 'medium': return 'w-12 h-4 text-xs sm:w-6 sm:h-16 sm:text-xs';
+        case 'large': return 'w-12 h-6 text-xs sm:w-7 sm:h-18 sm:text-sm';
+        default: return 'w-12 h-4 text-xs sm:w-6 sm:h-16';
+      }
+    }
   };
 
   const positionClasses = {
-    horizontal: 'mx-1 sm:mx-1.5',
-    vertical: 'my-1 sm:my-1.5'
+    horizontal: 'mx-0.5 sm:mx-0.5',
+    vertical: 'my-0.5 sm:my-0.5'
   };
 
   const baseClasses = `
-    ${sizeClasses[size]}
+    ${getSizeClasses()}
     ${positionClasses[position]}
     flex items-center justify-center
-    rounded-full font-bold
+    rounded-md font-bold
     select-none touch-manipulation
     transition-all duration-200
     cursor-pointer
@@ -53,14 +67,13 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
       return 'bg-orange-500 text-white shadow-lg scale-110 ring-2 ring-orange-300';
     }
     if (isAvailable) {
-      // Add subtle colors based on operator type
       switch (operator) {
         case '+':
-          return 'bg-green-100 text-green-700 hover:bg-green-200 border-2 border-green-300 hover:scale-105';
+          return 'bg-green-200 text-green-800 hover:bg-green-300 border border-green-400 hover:scale-105';
         case '-':
-          return 'bg-red-100 text-red-700 hover:bg-red-200 border-2 border-red-300 hover:scale-105';
+          return 'bg-red-200 text-red-800 hover:bg-red-300 border border-red-400 hover:scale-105';
         case '*':
-          return 'bg-purple-100 text-purple-700 hover:bg-purple-200 border-2 border-purple-300 hover:scale-105';
+          return 'bg-purple-200 text-purple-800 hover:bg-purple-300 border border-purple-400 hover:scale-105';
         default:
           return 'bg-gray-200 text-gray-700 hover:bg-gray-300 hover:scale-105';
       }
@@ -73,9 +86,9 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
       case '+':
         return '+';
       case '-':
-        return '−'; // Using minus sign instead of hyphen
+        return '−';
       case '*':
-        return '×'; // Using multiplication sign instead of asterisk
+        return '×';
       default:
         return operator;
     }
