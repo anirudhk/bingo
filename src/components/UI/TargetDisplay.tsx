@@ -1,7 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { useGameStore } from '../../store/gameStore';
-import { DIFFICULTY_CONFIGS } from '../../constants/game';
 
 interface TargetDisplayProps {
   currentTarget: number;
@@ -14,8 +12,7 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
   round,
   totalRounds
 }) => {
-  const { difficulty } = useGameStore();
-  const config = DIFFICULTY_CONFIGS[difficulty];
+
   const progressPercentage = totalRounds > 0 ? (round / totalRounds) * 100 : 0;
 
   return (
@@ -58,15 +55,7 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
         </motion.div>
       </div>
 
-      {/* Instructions */}
-      <motion.p
-        className="text-xs text-gray-600 text-center max-w-sm"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        Click through {config.tilesCount} numbers and {config.operatorsCount} operator{config.operatorsCount > 1 ? 's' : ''} to make this target number
-      </motion.p>
+
     </div>
   );
 };
