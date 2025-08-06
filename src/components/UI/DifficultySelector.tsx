@@ -60,7 +60,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Math Puzzle Game
+          Grid Genius
         </h1>
         <p className="text-gray-600">
           Choose your difficulty level to start playing
@@ -120,7 +120,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
         animate={{ opacity: 1 }}
         transition={{ delay: 0.8 }}
       >
-        Swipe through numbers and operators to reach the target!
+        Click through numbers and operators to reach the target!
       </motion.div>
     </div>
   );

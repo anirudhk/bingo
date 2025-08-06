@@ -10,8 +10,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Math Puzzle Game',
-        short_name: 'MathPuzzle',
+        name: 'Grid Genius',
+        short_name: 'GridGenius',
         description: 'A fun educational game for learning math through interactive puzzle solving',
         theme_color: '#4F46E5',
         background_color: '#FFFFFF',

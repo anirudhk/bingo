@@ -60,10 +60,10 @@ export const PWAInstallPrompt: React.FC = () => {
               <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white text-lg">🧮</span>
               </div>
-              <div>
-                <h3 className="font-semibold text-gray-900">Install Math Puzzle Game</h3>
-                <p className="text-sm text-gray-600">Add to home screen for the best experience</p>
-              </div>
+                              <div>
+                  <h3 className="font-semibold text-gray-900">Install Grid Genius</h3>
+                  <p className="text-sm text-gray-600">Add to home screen for the best experience</p>
+                </div>
             </div>
             <div className="flex space-x-2">
               <button

@@ -61,7 +61,7 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        Swipe through 3 numbers and 2 operators to make this target number
+        Click through 3 numbers and 2 operators to make this target number
       </motion.p>
     </div>
   );

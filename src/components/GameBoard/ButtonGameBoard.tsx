@@ -373,7 +373,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
             ← Back to Menu
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Math Puzzle Game</h1>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Grid Genius</h1>
             <p className="text-gray-600">Difficulty: {difficulty}</p>
           </div>
           <div className="text-right">
