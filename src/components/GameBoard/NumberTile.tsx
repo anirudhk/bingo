@@ -18,28 +18,30 @@ export const NumberTile: React.FC<NumberTileProps> = ({
   size = 'medium'
 }) => {
   const sizeClasses = {
-    small: 'w-8 h-8 text-xs sm:w-10 sm:h-10 sm:text-sm',
-    medium: 'w-10 h-10 text-sm sm:w-12 sm:h-12 sm:text-base',
-    large: 'w-12 h-12 text-base sm:w-14 sm:h-14 sm:text-lg'
+    small: 'w-12 h-12 text-sm sm:w-14 sm:h-14 sm:text-base',
+    medium: 'w-14 h-14 text-base sm:w-16 sm:h-16 sm:text-lg',
+    large: 'w-16 h-16 text-lg sm:w-18 sm:h-18 sm:text-xl'
   };
 
   const baseClasses = `
     ${sizeClasses[size]}
     flex items-center justify-center
-    rounded-lg border-2 font-bold
+    rounded-lg border-2 font-bold shadow-md
     select-none touch-manipulation
     transition-all duration-200
     cursor-pointer
+    hover:shadow-lg
+    aspect-square
   `;
 
   const getStateClasses = () => {
     if (isInPath) {
-      return 'bg-blue-500 text-white border-blue-600 shadow-lg scale-105';
+      return 'bg-gradient-to-br from-blue-500 to-blue-600 text-white border-blue-600 shadow-xl scale-105 ring-2 ring-blue-300';
     }
     if (isSelected) {
-      return 'bg-green-500 text-white border-green-600 shadow-md';
+      return 'bg-gradient-to-br from-green-500 to-green-600 text-white border-green-600 shadow-lg ring-2 ring-green-300';
     }
-    return 'bg-white text-gray-800 border-gray-300 hover:border-gray-400 hover:shadow-sm';
+    return 'bg-gradient-to-br from-white to-gray-50 text-gray-800 border-gray-300 hover:border-blue-400 hover:shadow-lg hover:scale-105';
   };
 
   return (

@@ -30,12 +30,12 @@ export const Timer: React.FC = () => {
   };
 
   return (
-    <div className="flex items-center justify-center bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg">
-      <div className="flex items-center space-x-2">
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div className="flex items-center justify-center bg-gray-800 text-white px-2 py-1 rounded-lg shadow-lg">
+      <div className="flex items-center space-x-1">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <span className="font-mono text-lg font-semibold">{formatTime(displayTime)}</span>
+        <span className="font-mono text-sm font-semibold">{formatTime(displayTime)}</span>
       </div>
     </div>
   );

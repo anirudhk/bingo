@@ -20,9 +20,9 @@ function App() {
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+      <div className="h-screen bg-gradient-to-br from-blue-50 to-purple-50 overflow-hidden">
         <PWAInstallPrompt />
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto h-full">
           <AnimatePresence mode="wait">
             <Routes>
               <Route 

@@ -35,59 +35,59 @@ export const ResultPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+    <div className="h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-2 overflow-hidden">
       <motion.div
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
-        className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full"
+        className="bg-white rounded-2xl shadow-2xl p-3 max-w-xs w-full max-h-[85vh]"
       >
         <div className="text-center">
           <motion.div
             initial={{ rotate: 0 }}
             animate={{ rotate: 360 }}
             transition={{ duration: 1, ease: "easeInOut" }}
-            className="text-6xl mb-4"
+            className="text-3xl mb-1"
           >
             🏆
           </motion.div>
           
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Game Complete!</h1>
-          <p className="text-gray-600 mb-6">{getScoreMessage()}</p>
+          <h1 className="text-lg font-bold text-gray-800 mb-1">Game Complete!</h1>
+          <p className="text-xs text-gray-600 mb-2">{getScoreMessage()}</p>
 
-          <div className="space-y-4">
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+          <div className="space-y-1">
+            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-1.5">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700 font-medium">Final Score:</span>
-                <span className="text-2xl font-bold text-blue-600">{score}</span>
+                <span className="text-gray-700 font-medium text-xs">Final Score:</span>
+                <span className="text-base font-bold text-blue-600">{score}</span>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-1.5">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700 font-medium">Total Time:</span>
-                <span className="text-xl font-semibold text-green-600">{formatTime(totalTime)}</span>
+                <span className="text-gray-700 font-medium text-xs">Total Time:</span>
+                <span className="text-sm font-semibold text-green-600">{formatTime(totalTime)}</span>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-1.5">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700 font-medium">Difficulty:</span>
-                <span className={`text-lg font-semibold capitalize ${getDifficultyColor()}`}>
+                <span className="text-gray-700 font-medium text-xs">Difficulty:</span>
+                <span className={`text-sm font-semibold capitalize ${getDifficultyColor()}`}>
                   {difficulty}
                 </span>
               </div>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4">
+            <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-1.5">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700 font-medium">Rounds Completed:</span>
-                <span className="text-xl font-semibold text-purple-600">{totalRounds}</span>
+                <span className="text-gray-700 font-medium text-xs">Rounds Completed:</span>
+                <span className="text-sm font-semibold text-purple-600">{totalRounds}</span>
               </div>
             </div>
           </div>
 
-          <div className="mt-8 space-y-3">
+          <div className="mt-3 space-y-1.5">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -96,7 +96,7 @@ export const ResultPage: React.FC = () => {
                 // Start a new game with the same difficulty immediately
                 navigate('/game');
               }}
-              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200"
+              className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold py-1.5 px-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-xs"
             >
               Play Again
             </motion.button>
@@ -108,7 +108,7 @@ export const ResultPage: React.FC = () => {
                 resetGame();
                 navigate('/');
               }}
-              className="w-full bg-gray-200 text-gray-700 font-semibold py-3 px-6 rounded-lg hover:bg-gray-300 transition-all duration-200"
+              className="w-full bg-gray-200 text-gray-700 font-semibold py-1.5 px-3 rounded-lg hover:bg-gray-300 transition-all duration-200 text-xs"
             >
               Back to Menu
             </motion.button>

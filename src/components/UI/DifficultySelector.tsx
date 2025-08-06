@@ -52,22 +52,22 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
   ];
 
   return (
-    <div className="max-w-md mx-auto p-6">
+    <div className="max-w-md mx-auto p-4 h-full flex flex-col justify-center">
       <motion.div
         className="text-center mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+        <h1 className="text-2xl font-bold text-gray-800 mb-2">
           Grid Genius
         </h1>
-        <p className="text-gray-600">
+        <p className="text-sm text-gray-600">
           Choose your difficulty level to start playing
         </p>
       </motion.div>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {difficulties.map((difficulty, index) => (
           <motion.button
             key={difficulty.level}
