@@ -357,28 +357,28 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
   };
 
   const gridContainerClasses = `
-    inline-grid gap-2 p-4 bg-gray-50 rounded-xl shadow-inner
+    inline-grid gap-1 sm:gap-2 p-2 sm:p-4 bg-gray-50 rounded-xl shadow-inner
     ${config.gridSize === 3 ? 'grid-cols-5' : config.gridSize === 4 ? 'grid-cols-7' : 'grid-cols-9'}
   `;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-4 sm:mb-6 space-y-2 sm:space-y-0">
           <button
             onClick={handleBackToMenu}
-            className="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            className="px-3 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-sm sm:text-base"
           >
             ← Back to Menu
           </button>
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">Grid Genius</h1>
-            <p className="text-gray-600">Difficulty: {difficulty}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 sm:mb-2">Grid Genius</h1>
+            <p className="text-sm sm:text-base text-gray-600">Difficulty: {difficulty}</p>
           </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-600">Score: {score}</p>
-            <p className="text-sm text-gray-600">Round: {currentRound}/{totalRounds}</p>
+          <div className="text-center sm:text-right">
+            <p className="text-xs sm:text-sm text-gray-600">Score: {score}</p>
+            <p className="text-xs sm:text-sm text-gray-600">Round: {currentRound}/{totalRounds}</p>
             <Timer />
           </div>
         </div>
@@ -387,7 +387,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
         <TargetDisplay currentTarget={currentTarget} round={currentRound} totalRounds={totalRounds} />
 
         {/* Game Grid */}
-        <div className="flex justify-center mb-6">
+        <div className="flex justify-center mb-4 sm:mb-6 px-2 sm:px-0">
           <motion.div
             className={gridContainerClasses}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -402,7 +402,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
                   
                   if (!tile) {
                     return (
-                      <div key={`empty-${row}-${col}`} className="w-16 h-16"></div>
+                      <div key={`empty-${row}-${col}`} className="w-12 h-12 sm:w-16 sm:h-16"></div>
                     );
                   }
                   
