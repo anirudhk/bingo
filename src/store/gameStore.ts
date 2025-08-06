@@ -14,6 +14,9 @@ interface GameStore extends GameState {
   setDifficulty: (difficulty: DifficultyLevel) => void;
   pauseGame: () => void;
   resumeGame: () => void;
+  startRoundTimer: () => void;
+  updateTimer: () => void;
+  stopRoundTimer: () => void;
 }
 
 const initialSwipeState: SwipeState = {
@@ -33,6 +36,9 @@ const createInitialState = (): Omit<GameState, 'swipeState'> & { swipeState: Swi
   score: 0,
   difficulty: 'medium',
   gameStatus: 'paused',
+  roundTime: 0,
+  totalTime: 0,
+  roundStartTime: null,
   swipeState: { ...initialSwipeState }
 });
 
@@ -67,6 +73,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       score: 0,
       difficulty,
       gameStatus: 'playing',
+      roundTime: 0,
+      totalTime: 0,
+      roundStartTime: Date.now(),
       swipeState: { ...initialSwipeState }
     });
   },
@@ -104,12 +113,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   nextRound: () => {
-    const { targetNumbers, currentRound, totalRounds } = get();
+    const { targetNumbers, currentRound, totalRounds, roundStartTime } = get();
     
     if (currentRound >= totalRounds) {
-      // Game completed
+      // Game completed - capture final time
+      const currentTime = Date.now();
+      const finalTime = roundStartTime ? currentTime - roundStartTime : 0;
+      
       set({
         gameStatus: 'completed',
+        roundStartTime: null,
+        totalTime: finalTime,
         swipeState: { ...initialSwipeState }
       });
       return;
@@ -153,5 +167,34 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   resumeGame: () => {
     set({ gameStatus: 'playing' });
+  },
+
+  startRoundTimer: () => {
+    set({ roundStartTime: Date.now() });
+  },
+
+  updateTimer: () => {
+    const { roundStartTime, totalTime } = get();
+    if (roundStartTime) {
+      const currentTime = Date.now();
+      const totalElapsed = currentTime - roundStartTime;
+      set({ 
+        roundTime: totalElapsed,
+        totalTime: totalElapsed
+      });
+    }
+  },
+
+  stopRoundTimer: () => {
+    const { roundStartTime, totalTime } = get();
+    if (roundStartTime) {
+      const currentTime = Date.now();
+      const roundElapsed = currentTime - roundStartTime;
+      set({ 
+        roundTime: roundElapsed,
+        totalTime: totalTime + roundElapsed,
+        roundStartTime: null
+      });
+    }
   }
 }));

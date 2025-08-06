@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TargetDisplay } from '../UI/TargetDisplay';
 import { CalculationFeedback } from '../UI/CalculationFeedback';
+import { Timer } from '../UI/Timer';
 import { useGameStore } from '../../store/gameStore';
 import { DifficultyLevel, Tile } from '../../types/game';
 import { formatCalculation, calculatePathResult } from '../../utils/calculator';
@@ -23,8 +24,11 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     totalRounds,
     score,
     gameStatus,
+    roundTime,
     initializeGame,
-    submitSolution
+    submitSolution,
+    updateTimer,
+    startRoundTimer
   } = useGameStore();
 
   const [selectedTiles, setSelectedTiles] = useState<Tile[]>([]);
@@ -43,7 +47,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
   useEffect(() => {
     console.log('Initializing game with difficulty:', difficulty);
     initializeGame(difficulty);
-  }, [difficulty, initializeGame]);
+    startRoundTimer();
+  }, [difficulty, initializeGame, startRoundTimer]);
 
   // Debug logging
   useEffect(() => {
@@ -55,6 +60,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
       gameStatus
     });
   }, [currentTarget, currentRound, totalRounds, grid.length, gameStatus]);
+
+
 
   const handleTileClick = (tile: Tile) => {
     // If tile is already selected, remove it (toggle selection)
@@ -285,6 +292,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
           <div className="text-right">
             <p className="text-sm text-gray-600">Score: {score}</p>
             <p className="text-sm text-gray-600">Round: {currentRound}/{totalRounds}</p>
+            <Timer />
           </div>
         </div>
 

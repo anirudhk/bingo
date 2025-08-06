@@ -3,13 +3,18 @@ import { BrowserRouter as Router, Routes, Route, Navigate, createBrowserRouter, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { DifficultySelector } from './components/UI/DifficultySelector';
 import { ButtonGameBoard } from './components/GameBoard/ButtonGameBoard';
+import { ResultPage } from './components/UI/ResultPage';
 import { DifficultyLevel } from './types/game';
+import { useGameStore } from './store/gameStore';
 
 function App() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
+  const { gameStatus, resetGame } = useGameStore();
 
   const handleDifficultySelect = (difficulty: DifficultyLevel) => {
     setSelectedDifficulty(difficulty);
+    // Reset game state when starting a new game
+    resetGame();
   };
 
   return (
@@ -38,14 +43,25 @@ function App() {
                 path="/game" 
                 element={
                   selectedDifficulty ? (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                      transition={{ duration: 0.3 }}
-                    >
-                      <ButtonGameBoard difficulty={selectedDifficulty} />
-                    </motion.div>
+                    gameStatus === 'completed' ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <ResultPage />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <ButtonGameBoard difficulty={selectedDifficulty} />
+                      </motion.div>
+                    )
                   ) : (
                     <Navigate to="/" replace />
                   )

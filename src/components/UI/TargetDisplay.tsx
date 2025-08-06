@@ -12,7 +12,7 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
   round,
   totalRounds
 }) => {
-  const progressPercentage = (round / totalRounds) * 100;
+  const progressPercentage = totalRounds > 0 ? (round / totalRounds) * 100 : 0;
 
   return (
     <div className="flex flex-col items-center space-y-4 mb-6">
@@ -26,7 +26,7 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
           <motion.div
             className="bg-blue-500 h-2 rounded-full"
             initial={{ width: 0 }}
-            animate={{ width: `${progressPercentage}%` }}
+            animate={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           />
         </div>

@@ -29,6 +29,9 @@ export interface Tile {
     difficulty: DifficultyLevel;
     gameStatus: 'playing' | 'completed' | 'paused';
     swipeState: SwipeState;
+    roundTime: number;
+    totalTime: number;
+    roundStartTime: number | null;
   }
   
   export type DifficultyLevel = 'easy' | 'medium' | 'hard';
