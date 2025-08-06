@@ -87,17 +87,11 @@ export const Grid: React.FC<GridProps> = ({
     }
   };
 
-  const isOperatorSelected = (row: number, col: number, position: 'horizontal' | 'vertical', operator: string): boolean => {
+  const isOperatorSelected = (_row: number, _col: number, _position: 'horizontal' | 'vertical', operator: string): boolean => {
     // Check if this specific operator instance is part of the selected path
-    const operatorKey = `${position}-${row}-${col}-${operator}`;
     
     // Only highlight operators when we have a valid path and this specific operator is selected
     const isSelected = selectedPath.length > 1 && selectedOperators.includes(operator);
-    
-    // Debug: log when operator is selected (but only once per operator to avoid spam)
-    if (isSelected) {
-      //console.log('🎯 Operator selected:', operatorKey, 'Path length:', selectedPath.length, 'Operators:', selectedOperators);
-    }
     
     return isSelected;
   };

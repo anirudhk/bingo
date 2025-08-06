@@ -24,10 +24,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     totalRounds,
     score,
     gameStatus,
-    roundTime,
     initializeGame,
     submitSolution,
-    updateTimer,
     startRoundTimer
   } = useGameStore();
 

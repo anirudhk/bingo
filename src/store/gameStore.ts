@@ -174,7 +174,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   updateTimer: () => {
-    const { roundStartTime, totalTime } = get();
+    const { roundStartTime } = get();
     if (roundStartTime) {
       const currentTime = Date.now();
       const totalElapsed = currentTime - roundStartTime;
