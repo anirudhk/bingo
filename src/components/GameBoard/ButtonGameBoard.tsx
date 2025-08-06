@@ -57,8 +57,22 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
   }, [currentTarget, currentRound, totalRounds, grid.length, gameStatus]);
 
   const handleTileClick = (tile: Tile) => {
-    // If tile is already selected, ignore
+    // If tile is already selected, remove it (toggle selection)
     if (selectedTiles.find(t => t.id === tile.id)) {
+      const newTiles = selectedTiles.filter(t => t.id !== tile.id);
+      setSelectedTiles(newTiles);
+      return;
+    }
+
+    // Check if we can select a number (should alternate: number -> operator -> number)
+    const totalSelections = selectedTiles.length + selectedOperators.length;
+    const isNumberTurn = totalSelections % 2 === 0; // 0, 2, 4, etc. are number turns
+
+    if (!isNumberTurn) {
+      // It's not a number's turn, vibrate and don't select
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
       return;
     }
 
@@ -75,6 +89,40 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
   const handleOperatorClick = (operator: string, row: number, col: number, position: 'horizontal' | 'vertical') => {
     // If we don't have enough tiles yet, ignore
     if (selectedTiles.length < 1) {
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
+      return;
+    }
+
+    // Check if this exact operator position is already selected
+    const isAlreadySelected = selectedOperatorPositions.find(
+      pos => pos.row === row && pos.col === col && pos.position === position && pos.operator === operator
+    );
+
+    if (isAlreadySelected) {
+      // Remove operator from selection (toggle selection)
+      const newOperators = selectedOperators.filter((_, index) => {
+        const pos = selectedOperatorPositions[index];
+        return !(pos.row === row && pos.col === col && pos.position === position && pos.operator === operator);
+      });
+      const newOperatorPositions = selectedOperatorPositions.filter(
+        pos => !(pos.row === row && pos.col === col && pos.position === position && pos.operator === operator)
+      );
+      setSelectedOperators(newOperators);
+      setSelectedOperatorPositions(newOperatorPositions);
+      return;
+    }
+
+    // Check if we can select an operator (should alternate: number -> operator -> number)
+    const totalSelections = selectedTiles.length + selectedOperators.length;
+    const isOperatorTurn = totalSelections % 2 === 1; // 1, 3, 5, etc. are operator turns
+
+    if (!isOperatorTurn) {
+      // It's not an operator's turn, vibrate and don't select
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
       return;
     }
 
