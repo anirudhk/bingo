@@ -83,6 +83,15 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
       return;
     }
 
+    // Check if the tile is valid for the next selection
+    if (!isTileValidForNextSelection(tile)) {
+      // Tile is not valid for selection, vibrate and don't select
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
+      return;
+    }
+
     // Add tile to selection
     const newTiles = [...selectedTiles, tile];
     setSelectedTiles(newTiles);
@@ -127,6 +136,15 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
 
     if (!isOperatorTurn) {
       // It's not an operator's turn, vibrate and don't select
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
+      return;
+    }
+
+    // Check if the operator is valid for selection
+    if (!isOperatorValidForSelection(row, col, position)) {
+      // Operator is not valid for selection, vibrate and don't select
       if (navigator.vibrate) {
         navigator.vibrate(100);
       }
@@ -223,6 +241,77 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
 
   const isOperatorAvailable = (_row: number, _col: number, _position: 'horizontal' | 'vertical'): boolean => {
     return config.availableOperators.length > 0;
+  };
+
+  // Helper function to check if two tiles are adjacent
+  const areTilesAdjacent = (tile1: Tile, tile2: Tile): boolean => {
+    const rowDiff = Math.abs(tile1.position.row - tile2.position.row);
+    const colDiff = Math.abs(tile1.position.col - tile2.position.col);
+    
+    // Adjacent means they share an edge (not diagonal)
+    return (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
+  };
+
+  // Helper function to check if a tile is valid for the next selection
+  const isTileValidForNextSelection = (tile: Tile): boolean => {
+    if (selectedTiles.length === 0) {
+      return true; // First tile can be selected from anywhere
+    }
+    
+    // If we have operators selected, the next tile must be connected by the last operator
+    if (selectedOperators.length > 0) {
+      const lastOperator = selectedOperatorPositions[selectedOperatorPositions.length - 1];
+      const lastTile = selectedTiles[selectedTiles.length - 1];
+      
+      // Check if this tile is connected by the last operator
+      if (lastOperator.position === 'horizontal') {
+        // For horizontal operator, check if this tile is the one connected by the operator
+        if (lastOperator.col === lastTile.position.col) {
+          // Operator is to the right of last tile, so next tile must be to the right
+          return tile.position.row === lastTile.position.row && 
+                 tile.position.col === lastTile.position.col + 1;
+        } else {
+          // Operator is to the left of last tile, so next tile must be to the left
+          return tile.position.row === lastTile.position.row && 
+                 tile.position.col === lastTile.position.col - 1;
+        }
+      } else {
+        // For vertical operator, check if this tile is the one connected by the operator
+        if (lastOperator.row === lastTile.position.row) {
+          // Operator is below last tile, so next tile must be below
+          return tile.position.col === lastTile.position.col && 
+                 tile.position.row === lastTile.position.row + 1;
+        } else {
+          // Operator is above last tile, so next tile must be above
+          return tile.position.col === lastTile.position.col && 
+                 tile.position.row === lastTile.position.row - 1;
+        }
+      }
+    }
+    
+    // If no operators selected yet, just check adjacency
+    const lastSelectedTile = selectedTiles[selectedTiles.length - 1];
+    return areTilesAdjacent(lastSelectedTile, tile);
+  };
+
+  // Helper function to check if an operator is valid for selection
+  const isOperatorValidForSelection = (row: number, col: number, position: 'horizontal' | 'vertical'): boolean => {
+    if (selectedTiles.length === 0) {
+      return false; // Need at least one tile to select an operator
+    }
+    
+    const lastTile = selectedTiles[selectedTiles.length - 1];
+    
+    // Check if this operator is adjacent to the last selected tile
+    if (position === 'horizontal') {
+      // Horizontal operator should be adjacent horizontally
+      return lastTile.position.row === row && 
+             (lastTile.position.col === col || lastTile.position.col === col + 1);
+    } else {
+      // Vertical operator should be adjacent vertically
+      return lastTile.position.col === col && 
+             (lastTile.position.row === row || lastTile.position.row === row + 1);
+    }
   };
 
   const renderHorizontalOperators = (row: number, col: number) => {

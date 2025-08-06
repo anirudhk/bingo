@@ -7,7 +7,7 @@ export const DIFFICULTY_CONFIGS: Record<string, DifficultyConfig> = {
     operatorsCount: 1,
     availableOperators: ['+', '-'],
     targetRange: { min: 1, max: 20 },
-    totalRounds: 5
+    totalRounds: 10
   },
   medium: {
     gridSize: 4,
@@ -15,7 +15,7 @@ export const DIFFICULTY_CONFIGS: Record<string, DifficultyConfig> = {
     operatorsCount: 2,
     availableOperators: ['+', '-', '*'],
     targetRange: { min: 1, max: 35 },
-    totalRounds: 5
+    totalRounds: 10
   },
   hard: {
     gridSize: 4,
@@ -23,7 +23,7 @@ export const DIFFICULTY_CONFIGS: Record<string, DifficultyConfig> = {
     operatorsCount: 2,
     availableOperators: ['+', '-', '*'],
     targetRange: { min: 1, max: 50 },
-    totalRounds: 5
+    totalRounds: 10
   }
 };
 
