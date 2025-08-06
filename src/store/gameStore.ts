@@ -72,13 +72,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   submitSolution: (tiles: Tile[], operators: string[]): boolean => {
-    const { currentTarget, currentRound, score, difficulty } = get();
+    const { currentTarget, difficulty } = get();
     
     const result = calculatePathResult(tiles, operators);
     
     if (result === currentTarget) {
       // Correct solution
-      const config = DIFFICULTY_CONFIGS[difficulty];
+
       const baseScore = 10;
       const difficultyMultiplier = difficulty === 'easy' ? 1 : difficulty === 'medium' ? 1.5 : 2;
       const roundScore = Math.floor(baseScore * difficultyMultiplier);
@@ -154,4 +154,4 @@ export const useGameStore = create<GameStore>((set, get) => ({
   resumeGame: () => {
     set({ gameStatus: 'playing' });
   }
-});
+}));

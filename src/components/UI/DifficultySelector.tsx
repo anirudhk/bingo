@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { DifficultyLevel } from '../../types/game';
+import { useGameStore } from '../../store/gameStore';
 
 interface DifficultySelectorProps {
   onSelect: (difficulty: DifficultyLevel) => void;
@@ -11,6 +13,17 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
   onSelect,
   selectedDifficulty
 }) => {
+  const navigate = useNavigate();
+  const { setDifficulty } = useGameStore();
+
+  const handleDifficultySelect = (difficulty: DifficultyLevel) => {
+    setDifficulty(difficulty);
+    onSelect(difficulty);
+    // Navigate to game after a short delay to allow state to update
+    setTimeout(() => {
+      navigate('/game');
+    }, 100);
+  };
   const difficulties = [
     {
       level: 'easy' as DifficultyLevel,
@@ -69,7 +82,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
                 : ''
               }
             `}
-            onClick={() => onSelect(difficulty.level)}
+            onClick={() => handleDifficultySelect(difficulty.level)}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ 

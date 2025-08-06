@@ -1,5 +1,4 @@
 import { Tile } from '../types/game';
-import { DIFFICULTY_CONFIGS } from '../constants/game';
 
 export const calculateResult = (num1: number, op1: string, num2: number, op2: string, num3: number): number => {
   // Calculate left to right (no operator precedence for simplicity)
@@ -48,6 +47,8 @@ export const calculatePathResult = (tiles: Tile[], operators: string[]): number 
     const [tile1, tile2] = tiles;
     const [op1] = operators;
     
+
+    
     switch (op1) {
       case '+':
         return tile1.value + tile2.value;
@@ -56,6 +57,7 @@ export const calculatePathResult = (tiles: Tile[], operators: string[]): number 
       case '*':
         return tile1.value * tile2.value;
       default:
+        console.log('Invalid operator:', op1);
         return null;
     }
   }
@@ -65,9 +67,12 @@ export const calculatePathResult = (tiles: Tile[], operators: string[]): number 
     const [tile1, tile2, tile3] = tiles;
     const [op1, op2] = operators;
     
+    console.log('Medium/Hard mode calculation:', tile1.value, op1, tile2.value, op2, tile3.value);
+    
     return calculateResult(tile1.value, op1, tile2.value, op2, tile3.value);
   }
 
+  console.log('No matching calculation pattern');
   return null;
 };
 

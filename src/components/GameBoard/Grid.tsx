@@ -14,6 +14,9 @@ interface GridProps {
   onTouchMove: (event: TouchEvent) => void;
   onTouchEnd: (event: TouchEvent) => void;
   onTouchCancel: (event: TouchEvent) => void;
+  onMouseDown: (event: MouseEvent) => void;
+  onMouseMove: (event: MouseEvent) => void;
+  onMouseUp: (event: MouseEvent) => void;
 }
 
 export const Grid: React.FC<GridProps> = ({
@@ -24,7 +27,10 @@ export const Grid: React.FC<GridProps> = ({
   onTouchStart,
   onTouchMove,
   onTouchEnd,
-  onTouchCancel
+  onTouchCancel,
+  onMouseDown,
+  onMouseMove,
+  onMouseUp
 }) => {
   const config = DIFFICULTY_CONFIGS[difficulty];
   const gridSize = config.gridSize;
@@ -39,13 +45,21 @@ export const Grid: React.FC<GridProps> = ({
     gridElement.addEventListener('touchend', onTouchEnd, { passive: false });
     gridElement.addEventListener('touchcancel', onTouchCancel, { passive: false });
 
+    // Add mouse event listeners for desktop testing
+    gridElement.addEventListener('mousedown', onMouseDown, { passive: false });
+    gridElement.addEventListener('mousemove', onMouseMove, { passive: false });
+    gridElement.addEventListener('mouseup', onMouseUp, { passive: false });
+
     return () => {
       gridElement.removeEventListener('touchstart', onTouchStart);
       gridElement.removeEventListener('touchmove', onTouchMove);
       gridElement.removeEventListener('touchend', onTouchEnd);
       gridElement.removeEventListener('touchcancel', onTouchCancel);
+      gridElement.removeEventListener('mousedown', onMouseDown);
+      gridElement.removeEventListener('mousemove', onMouseMove);
+      gridElement.removeEventListener('mouseup', onMouseUp);
     };
-  }, [onTouchStart, onTouchMove, onTouchEnd, onTouchCancel]);
+  }, [onTouchStart, onTouchMove, onTouchEnd, onTouchCancel, onMouseDown, onMouseMove, onMouseUp]);
 
   const getTileSize = () => {
     switch (gridSize) {
@@ -74,12 +88,21 @@ export const Grid: React.FC<GridProps> = ({
   };
 
   const isOperatorSelected = (row: number, col: number, position: 'horizontal' | 'vertical', operator: string): boolean => {
-    // Check if this operator is part of the selected path
-    // This is a simplified version - in a real implementation, you'd track which specific operators were selected
-    return selectedPath.length > 1 && selectedOperators.includes(operator);
+    // Check if this specific operator instance is part of the selected path
+    const operatorKey = `${position}-${row}-${col}-${operator}`;
+    
+    // Only highlight operators when we have a valid path and this specific operator is selected
+    const isSelected = selectedPath.length > 1 && selectedOperators.includes(operator);
+    
+    // Debug: log when operator is selected (but only once per operator to avoid spam)
+    if (isSelected) {
+      //console.log('🎯 Operator selected:', operatorKey, 'Path length:', selectedPath.length, 'Operators:', selectedOperators);
+    }
+    
+    return isSelected;
   };
 
-  const isOperatorAvailable = (row: number, col: number, position: 'horizontal' | 'vertical'): boolean => {
+  const isOperatorAvailable = (_row: number, _col: number, _position: 'horizontal' | 'vertical'): boolean => {
     return config.availableOperators.length > 0;
   };
 
@@ -87,15 +110,17 @@ export const Grid: React.FC<GridProps> = ({
     if (col >= gridSize - 1) return null;
 
     return (
-      <div className="flex items-center justify-center space-x-1">
+      <div className="flex flex-col items-center justify-center space-y-2">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`h-${row}-${col}-${operator}`}
             operator={operator as '+' | '-' | '*'}
-            position="horizontal"
+            position="vertical"
             isSelected={isOperatorSelected(row, col, 'horizontal', operator)}
             isAvailable={isOperatorAvailable(row, col, 'horizontal')}
             size={getOperatorSize()}
+            row={row}
+            col={col}
           />
         ))}
       </div>
@@ -106,15 +131,17 @@ export const Grid: React.FC<GridProps> = ({
     if (row >= gridSize - 1) return null;
 
     return (
-      <div className="flex flex-col items-center justify-center space-y-1">
+      <div className="flex items-center justify-center space-x-2">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`v-${row}-${col}-${operator}`}
             operator={operator as '+' | '-' | '*'}
-            position="vertical"
+            position="horizontal"
             isSelected={isOperatorSelected(row, col, 'vertical', operator)}
             isAvailable={isOperatorAvailable(row, col, 'vertical')}
             size={getOperatorSize()}
+            row={row}
+            col={col}
           />
         ))}
       </div>
@@ -139,6 +166,14 @@ export const Grid: React.FC<GridProps> = ({
           {Array.from({ length: gridSize }, (_, col) => {
             const tileIndex = row * gridSize + col;
             const tile = tiles[tileIndex];
+            
+            // Add null check to prevent undefined tile error
+            if (!tile) {
+              return (
+                <div key={`empty-${row}-${col}`} className="w-16 h-16"></div>
+              );
+            }
+            
             const pathIndex = selectedPath.findIndex(t => t.id === tile.id);
             
             return (
