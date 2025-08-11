@@ -1,17 +1,19 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { DifficultyLevel } from '../../types/game';
+import { DifficultyLevel, GameMode } from '../../types/game';
 import { useGameStore } from '../../store/gameStore';
 
 interface DifficultySelectorProps {
   onSelect: (difficulty: DifficultyLevel) => void;
   selectedDifficulty?: DifficultyLevel;
+  gameMode: GameMode;
 }
 
 export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
   onSelect,
-  selectedDifficulty
+  selectedDifficulty,
+  gameMode
 }) => {
   const navigate = useNavigate();
   const { setDifficulty } = useGameStore();
@@ -59,8 +61,17 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
+        <button
+          onClick={() => navigate('/')}
+          className="mb-4 text-sm text-blue-600 hover:text-blue-800 flex items-center"
+        >
+          ← Back to Game Modes
+        </button>
         <h1 className="text-2xl font-bold text-gray-800 mb-2">
-          Grid Genius
+          {gameMode === 'timeAttack' ? 'Time Attack' : 
+           gameMode === 'classic' ? 'Classic Mode' : 
+           gameMode === 'endless' ? 'Endless Mode' : 
+           'Puzzle Mode'}
         </h1>
         <p className="text-sm text-gray-600">
           Choose your difficulty level to start playing

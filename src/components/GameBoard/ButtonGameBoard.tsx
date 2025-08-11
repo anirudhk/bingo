@@ -4,8 +4,9 @@ import { motion } from 'framer-motion';
 import { TargetDisplay } from '../UI/TargetDisplay';
 import { CalculationFeedback } from '../UI/CalculationFeedback';
 import { Timer } from '../UI/Timer';
+import { TimeAttackTimer } from '../UI/TimeAttackTimer';
 import { useGameStore } from '../../store/gameStore';
-import { DifficultyLevel, Tile } from '../../types/game';
+import { DifficultyLevel, GameMode, Tile } from '../../types/game';
 import { formatCalculation, calculatePathResult } from '../../utils/calculator';
 import { DIFFICULTY_CONFIGS } from '../../constants/game';
 import { NumberTile } from './NumberTile';
@@ -13,9 +14,10 @@ import { OperatorIcon } from './OperatorIcon';
 
 interface ButtonGameBoardProps {
   difficulty: DifficultyLevel;
+  gameMode: GameMode;
 }
 
-export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) => {
+export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty, gameMode }) => {
   const navigate = useNavigate();
   const {
     grid,
@@ -46,10 +48,10 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
 
   // Initialize game when component mounts
   useEffect(() => {
-    console.log('Initializing game with difficulty:', difficulty);
-    initializeGame(difficulty);
+    console.log('Initializing game with difficulty:', difficulty, 'mode:', gameMode);
+    initializeGame(difficulty, gameMode);
     startRoundTimer();
-  }, [difficulty, initializeGame, startRoundTimer]);
+  }, [difficulty, gameMode, initializeGame, startRoundTimer]);
 
   // Debug logging
   useEffect(() => {
@@ -330,6 +332,10 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     navigate('/');
   };
 
+  const handleBackToLobby = () => {
+    navigate('/difficulty');
+  };
+
   const getTileSize = () => {
     switch (config.gridSize) {
       case 3:
@@ -566,23 +572,36 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
       <div className="max-w-4xl mx-auto h-full flex flex-col">
         {/* Header */}
         <div className="mb-2 sm:mb-4">
-          {/* Top Row: Back Button and Title */}
+          {/* Top Row: Back Buttons and Title */}
           <div className="flex justify-between items-center mb-1">
-            <button
-              onClick={handleBackToMenu}
-              className="px-2 py-1 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs sm:text-sm"
-            >
-              ← Back to Menu
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleBackToMenu}
+                className="px-2 py-1 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors text-xs"
+              >
+                ← Menu
+              </button>
+              <button
+                onClick={handleBackToLobby}
+                className="px-2 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-xs"
+              >
+                ← Lobby
+              </button>
+            </div>
             <h1 className="text-lg sm:text-xl font-bold text-gray-800">Grid Genius</h1>
-            <Timer />
+            {gameMode === 'timeAttack' ? <TimeAttackTimer /> : <Timer />}
           </div>
           
           {/* Bottom Row: Game Info */}
           <div className="flex justify-between items-center">
             <div className="text-left">
               <p className="text-xs text-gray-600">Score: {score}</p>
-              <p className="text-xs text-gray-600">Round: {currentRound}/{totalRounds}</p>
+              {gameMode === 'classic' && (
+                <p className="text-xs text-gray-600">Round: {currentRound}/{totalRounds}</p>
+              )}
+              {gameMode === 'timeAttack' && (
+                <p className="text-xs text-gray-600">Mode: Time Attack</p>
+              )}
             </div>
             <div className="text-right">
               <p className="text-xs text-gray-600">Difficulty: {difficulty}</p>
@@ -591,7 +610,12 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
         </div>
 
         {/* Target Display */}
-        <TargetDisplay currentTarget={currentTarget} round={currentRound} totalRounds={totalRounds} />
+        <TargetDisplay 
+          currentTarget={currentTarget} 
+          round={currentRound} 
+          totalRounds={totalRounds}
+          gameMode={gameMode}
+        />
 
         {/* Selection Status Display (only when there are selections) - COMMENTED OUT */}
         {false && (selectedTiles.length > 0 || selectedOperators.length > 0) && (

@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GameModeSelector } from './components/UI/GameModeSelector';
 import { DifficultySelector } from './components/UI/DifficultySelector';
 import { ButtonGameBoard } from './components/GameBoard/ButtonGameBoard';
 import { ResultPage } from './components/UI/ResultPage';
 import { PWAInstallPrompt } from './components/UI/PWAInstallPrompt';
-import { DifficultyLevel } from './types/game';
+import { DifficultyLevel, GameMode } from './types/game';
 import { useGameStore } from './store/gameStore';
 
 function App() {
+  const [selectedGameMode, setSelectedGameMode] = useState<GameMode | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
   const { gameStatus, resetGame } = useGameStore();
+
+  const handleGameModeSelect = (mode: GameMode) => {
+    setSelectedGameMode(mode);
+    setSelectedDifficulty(null); // Reset difficulty when changing mode
+  };
 
   const handleDifficultySelect = (difficulty: DifficultyLevel) => {
     setSelectedDifficulty(difficulty);
@@ -34,17 +41,38 @@ function App() {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <DifficultySelector 
-                      onSelect={handleDifficultySelect}
-                      selectedDifficulty={selectedDifficulty || undefined}
+                    <GameModeSelector 
+                      onSelect={handleGameModeSelect}
+                      selectedMode={selectedGameMode || undefined}
                     />
                   </motion.div>
                 } 
               />
               <Route 
+                path="/difficulty" 
+                element={
+                  selectedGameMode ? (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <DifficultySelector 
+                        onSelect={handleDifficultySelect}
+                        selectedDifficulty={selectedDifficulty || undefined}
+                        gameMode={selectedGameMode}
+                      />
+                    </motion.div>
+                  ) : (
+                    <Navigate to="/" replace />
+                  )
+                } 
+              />
+              <Route 
                 path="/game" 
                 element={
-                  selectedDifficulty ? (
+                  selectedDifficulty && selectedGameMode ? (
                     gameStatus === 'completed' ? (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.9 }}
@@ -61,7 +89,10 @@ function App() {
                         exit={{ opacity: 0, scale: 0.9 }}
                         transition={{ duration: 0.3 }}
                       >
-                        <ButtonGameBoard difficulty={selectedDifficulty} />
+                        <ButtonGameBoard 
+                          difficulty={selectedDifficulty} 
+                          gameMode={selectedGameMode}
+                        />
                       </motion.div>
                     )
                   ) : (

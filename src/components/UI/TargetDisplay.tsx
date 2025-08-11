@@ -1,37 +1,42 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { GameMode } from '../../types/game';
 
 interface TargetDisplayProps {
   currentTarget: number;
   round: number;
   totalRounds: number;
+  gameMode?: GameMode;
 }
 
 export const TargetDisplay: React.FC<TargetDisplayProps> = ({
   currentTarget,
   round,
-  totalRounds
+  totalRounds,
+  gameMode = 'classic'
 }) => {
 
   const progressPercentage = totalRounds > 0 ? (round / totalRounds) * 100 : 0;
 
   return (
     <div className="flex flex-col items-center space-y-2 mb-3">
-      {/* Progress Bar */}
-      <div className="w-full max-w-md">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Round {round}</span>
-          <span>{totalRounds} Total</span>
+      {/* Progress Bar - Only show for classic mode */}
+      {gameMode === 'classic' && (
+        <div className="w-full max-w-md">
+          <div className="flex justify-between text-sm text-gray-600 mb-2">
+            <span>Round {round}</span>
+            <span>{totalRounds} Total</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <motion.div
+              className="bg-blue-500 h-2 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            />
+          </div>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <motion.div
-            className="bg-blue-500 h-2 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.max(0, Math.min(100, progressPercentage))}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-        </div>
-      </div>
+      )}
 
       {/* Target Number */}
               <div className="text-center">

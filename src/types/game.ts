@@ -20,21 +20,35 @@ export interface Tile {
   }
   
   export interface GameState {
-    grid: Tile[];
-    targetNumbers: number[];
-    currentTarget: number;
-    currentRound: number;
-    totalRounds: number;
-    score: number;
-    difficulty: DifficultyLevel;
-    gameStatus: 'playing' | 'completed' | 'paused';
-    swipeState: SwipeState;
-    roundTime: number;
-    totalTime: number;
-    roundStartTime: number | null;
-  }
+  grid: Tile[];
+  targetNumbers: number[];
+  currentTarget: number;
+  currentRound: number;
+  totalRounds: number;
+  score: number;
+  difficulty: DifficultyLevel;
+  gameMode: GameMode;
+  gameStatus: 'playing' | 'completed' | 'paused';
+  swipeState: SwipeState;
+  roundTime: number;
+  totalTime: number;
+  roundStartTime: number | null;
+  timeAttackTimeLeft?: number; // For time attack mode
+  timeAttackRoundsCompleted?: number; // For time attack mode
+}
   
   export type DifficultyLevel = 'easy' | 'medium' | 'hard';
+
+export type GameMode = 'classic' | 'timeAttack' | 'endless' | 'puzzle';
+
+export interface GameModeConfig {
+  id: GameMode;
+  title: string;
+  description: string;
+  icon: string;
+  color: string;
+  available: boolean;
+}
   
   export interface DifficultyConfig {
     gridSize: number;
