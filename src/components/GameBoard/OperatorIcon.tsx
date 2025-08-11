@@ -6,6 +6,7 @@ interface OperatorIconProps {
   position: 'horizontal' | 'vertical';
   isSelected: boolean;
   isAvailable: boolean;
+  isInHint?: boolean;
   size?: 'small' | 'medium' | 'large';
   row?: number;
   col?: number;
@@ -17,6 +18,7 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
   position,
   isSelected,
   isAvailable,
+  isInHint = false,
   size = 'medium',
   row,
   col,
@@ -42,7 +44,7 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
         case 'small': return 'w-8 h-4 text-xs sm:w-5 sm:h-14';
         case 'medium': return 'w-12 h-4 text-xs sm:w-6 sm:h-16 sm:text-xs';
         case 'large': return 'w-12 h-6 text-xs sm:w-7 sm:h-18 sm:text-sm';
-        default: return 'w-12 h-4 text-xs sm:w-6 sm:h-16';
+        default: return 'w-4 h-12 text-xs sm:w-6 sm:h-16';
       }
     }
   };
@@ -65,6 +67,9 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
   const getStateClasses = () => {
     if (isSelected) {
       return 'bg-orange-500 text-white shadow-lg scale-110 ring-2 ring-orange-300';
+    }
+    if (isInHint) {
+      return 'bg-yellow-400 text-yellow-900 shadow-lg scale-105 ring-2 ring-yellow-300 animate-pulse';
     }
     if (isAvailable) {
       switch (operator) {
@@ -105,7 +110,7 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
       className={`${baseClasses} ${getStateClasses()}`}
       initial={{ scale: 1, opacity: 0.7 }}
       animate={{
-        scale: isSelected ? 1.1 : 1,
+        scale: isSelected ? 1.1 : isInHint ? 1.05 : 1,
         opacity: isAvailable ? 1 : 0.3
       }}
       transition={{

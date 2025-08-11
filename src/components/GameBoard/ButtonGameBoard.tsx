@@ -38,6 +38,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     result: null as number | null,
     isCorrect: undefined as boolean | undefined
   });
+  const [hintTiles, setHintTiles] = useState<Tile[]>([]);
+  const [hintOperatorPositions, setHintOperatorPositions] = useState<Array<{row: number, col: number, position: 'horizontal' | 'vertical', operator: string}>>([]);
+  const [showHint, setShowHint] = useState(false);
 
   const config = DIFFICULTY_CONFIGS[difficulty];
 
@@ -66,6 +69,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     if (selectedTiles.find(t => t.id === tile.id)) {
       const newTiles = selectedTiles.filter(t => t.id !== tile.id);
       setSelectedTiles(newTiles);
+      // Also clear operators when deselecting a tile
+      setSelectedOperators([]);
+      setSelectedOperatorPositions([]);
       return;
     }
 
@@ -161,6 +167,144 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     }
   };
 
+  const clearSelection = () => {
+    setSelectedTiles([]);
+    setSelectedOperators([]);
+    setSelectedOperatorPositions([]);
+    clearHint();
+  };
+
+  const clearHint = () => {
+    setHintTiles([]);
+    setHintOperatorPositions([]);
+    setShowHint(false);
+  };
+
+  const findHint = () => {
+    // Clear any existing selections first
+    clearSelection();
+    
+    // Find a valid solution for the current target
+    const solutions = findValidSolutions();
+    if (solutions.length > 0) {
+      const hint = solutions[0]; // Take the first valid solution
+      setHintTiles(hint.tiles);
+      setHintOperatorPositions(hint.operatorPositions);
+      setShowHint(true);
+      
+      // Auto-hide hint after 5 seconds
+      setTimeout(() => {
+        clearHint();
+      }, 5000);
+    }
+  };
+
+  const findValidSolutions = () => {
+    const solutions: Array<{tiles: Tile[], operatorPositions: Array<{row: number, col: number, position: 'horizontal' | 'vertical', operator: string}>}> = [];
+    
+    // Try all possible combinations based on difficulty
+    if (config.tilesCount === 2) {
+      // Easy mode: try all adjacent pairs
+      for (let i = 0; i < grid.length; i++) {
+        const tile1 = grid[i];
+        // Check horizontal adjacency
+        if (tile1.position.col < config.gridSize - 1) {
+          const tile2 = grid.find(t => t.position.row === tile1.position.row && t.position.col === tile1.position.col + 1);
+          if (tile2) {
+            for (const operator of config.availableOperators) {
+              const result = calculatePathResult([tile1, tile2], [operator]);
+              if (result === currentTarget) {
+                solutions.push({
+                  tiles: [tile1, tile2],
+                  operatorPositions: [{
+                    row: tile1.position.row,
+                    col: tile1.position.col,
+                    position: 'horizontal',
+                    operator
+                  }]
+                });
+              }
+            }
+          }
+        }
+        
+        // Check vertical adjacency
+        if (tile1.position.row < config.gridSize - 1) {
+          const tile2 = grid.find(t => t.position.row === tile1.position.row + 1 && t.position.col === tile1.position.col);
+          if (tile2) {
+            for (const operator of config.availableOperators) {
+              const result = calculatePathResult([tile1, tile2], [operator]);
+              if (result === currentTarget) {
+                solutions.push({
+                  tiles: [tile1, tile2],
+                  operatorPositions: [{
+                    row: tile1.position.row,
+                    col: tile1.position.col,
+                    position: 'vertical',
+                    operator
+                  }]
+                });
+              }
+            }
+          }
+        }
+      }
+    } else if (config.tilesCount === 3) {
+      // Medium/Hard mode: try all valid 3-tile combinations
+      for (let i = 0; i < grid.length; i++) {
+        const tile1 = grid[i];
+        
+        // Try horizontal sequences
+        if (tile1.position.col <= config.gridSize - 3) {
+          const tile2 = grid.find(t => t.position.row === tile1.position.row && t.position.col === tile1.position.col + 1);
+          const tile3 = grid.find(t => t.position.row === tile1.position.row && t.position.col === tile1.position.col + 2);
+          
+          if (tile2 && tile3) {
+            for (const op1 of config.availableOperators) {
+              for (const op2 of config.availableOperators) {
+                const result = calculatePathResult([tile1, tile2, tile3], [op1, op2]);
+                if (result === currentTarget) {
+                  solutions.push({
+                    tiles: [tile1, tile2, tile3],
+                    operatorPositions: [
+                      { row: tile1.position.row, col: tile1.position.col, position: 'horizontal', operator: op1 },
+                      { row: tile2.position.row, col: tile2.position.col, position: 'horizontal', operator: op2 }
+                    ]
+                  });
+                }
+              }
+            }
+          }
+        }
+        
+        // Try vertical sequences
+        if (tile1.position.row <= config.gridSize - 3) {
+          const tile2 = grid.find(t => t.position.row === tile1.position.row + 1 && t.position.col === tile1.position.col);
+          const tile3 = grid.find(t => t.position.row === tile1.position.row + 2 && t.position.col === tile1.position.col);
+          
+          if (tile2 && tile3) {
+            for (const op1 of config.availableOperators) {
+              for (const op2 of config.availableOperators) {
+                const result = calculatePathResult([tile1, tile2, tile3], [op1, op2]);
+                if (result === currentTarget) {
+                  solutions.push({
+                    tiles: [tile1, tile2, tile3],
+                    operatorPositions: [
+                      { row: tile1.position.row, col: tile1.position.col, position: 'vertical', operator: op1 },
+                      { row: tile2.position.row, col: tile2.position.col, position: 'vertical', operator: op2 }
+                    ]
+                  });
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return solutions;
+  };
+
   const checkAnswer = (tiles: Tile[], operators: string[]) => {
     const isCorrect = submitSolution(tiles, operators);
     
@@ -177,9 +321,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
 
     // Reset selection after a delay
     setTimeout(() => {
-      setSelectedTiles([]);
-      setSelectedOperators([]);
-      setSelectedOperatorPositions([]);
+      clearSelection();
       setShowFeedback(false);
     }, 2000);
   };
@@ -193,7 +335,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
       case 3:
         return 'large';
       case 4:
-        return 'small';
+        return 'medium';
       case 5:
         return 'small';
       default:
@@ -206,7 +348,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
       case 3:
         return 'large';
       case 4:
-        return 'small';
+        return 'medium';
       case 5:
         return 'small';
       default:
@@ -218,6 +360,10 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     return selectedTiles.find(t => t.id === tile.id) !== undefined;
   };
 
+  const isTileInHint = (tile: Tile) => {
+    return showHint && hintTiles.find(t => t.id === tile.id) !== undefined;
+  };
+
   const isTileInPath = (tile: Tile) => {
     return selectedTiles.find(t => t.id === tile.id) !== undefined;
   };
@@ -227,9 +373,26 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
     return index !== -1 ? index : undefined;
   };
 
+  const getHintPathIndex = (tile: Tile) => {
+    if (!showHint) return undefined;
+    const index = hintTiles.findIndex(t => t.id === tile.id);
+    return index !== -1 ? index : undefined;
+  };
+
   const isOperatorSelected = (row: number, col: number, position: 'horizontal' | 'vertical', operator: string): boolean => {
     // Check if this specific operator instance is selected
     return selectedOperatorPositions.some(pos => 
+      pos.row === row && 
+      pos.col === col && 
+      pos.position === position && 
+      pos.operator === operator
+    );
+  };
+
+  const isOperatorInHint = (row: number, col: number, position: 'horizontal' | 'vertical', operator: string): boolean => {
+    if (!showHint) return false;
+    // Check if this specific operator instance is part of the hint
+    return hintOperatorPositions.some(pos => 
       pos.row === row && 
       pos.col === col && 
       pos.position === position && 
@@ -323,6 +486,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
             operator={operator as '+' | '-' | '*'}
             position="vertical"
             isSelected={isOperatorSelected(row, col, 'horizontal', operator)}
+            isInHint={isOperatorInHint(row, col, 'horizontal', operator)}
             isAvailable={isOperatorAvailable(row, col, 'horizontal')}
             size={getOperatorSize()}
             row={row}
@@ -345,6 +509,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
             operator={operator as '+' | '-' | '*'}
             position="horizontal"
             isSelected={isOperatorSelected(row, col, 'vertical', operator)}
+            isInHint={isOperatorInHint(row, col, 'vertical', operator)}
             isAvailable={isOperatorAvailable(row, col, 'vertical')}
             size={getOperatorSize()}
             row={row}
@@ -362,7 +527,42 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
   `;
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4 overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-2 sm:p-4 overflow-hidden relative">
+      {/* Fixed Action Buttons - Right Side */}
+      <div className="fixed right-4 top-40 flex flex-col space-y-2 z-10">
+        {/* Hint Button */}
+        <motion.button
+          onClick={findHint}
+          disabled={showHint}
+          className={`w-10 h-10 rounded-full shadow-lg transition-all duration-200 ${
+            showHint
+              ? 'bg-yellow-300 text-yellow-700 cursor-not-allowed' 
+              : 'bg-blue-500 text-white hover:bg-blue-600 hover:scale-110'
+          }`}
+          whileHover={!showHint ? { scale: 1.1 } : {}}
+          whileTap={!showHint ? { scale: 0.9 } : {}}
+          title={showHint ? "Hint Active" : "Show Hint"}
+        >
+          💡
+        </motion.button>
+        
+        {/* Clear Button */}
+        <motion.button
+          onClick={clearSelection}
+          disabled={selectedTiles.length === 0 && selectedOperators.length === 0 && !showHint}
+          className={`w-10 h-10 rounded-full shadow-lg transition-all duration-200 ${
+            selectedTiles.length === 0 && selectedOperators.length === 0 && !showHint
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
+              : 'bg-red-500 text-white hover:bg-red-600 hover:scale-110'
+          }`}
+          whileHover={selectedTiles.length > 0 || selectedOperators.length > 0 || showHint ? { scale: 1.1 } : {}}
+          whileTap={selectedTiles.length > 0 || selectedOperators.length > 0 || showHint ? { scale: 0.9 } : {}}
+          title="Clear Selection"
+        >
+          ✕
+        </motion.button>
+      </div>
+      
       <div className="max-w-4xl mx-auto h-full flex flex-col">
         {/* Header */}
         <div className="mb-2 sm:mb-4">
@@ -392,6 +592,28 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
 
         {/* Target Display */}
         <TargetDisplay currentTarget={currentTarget} round={currentRound} totalRounds={totalRounds} />
+
+        {/* Selection Status Display (only when there are selections) - COMMENTED OUT */}
+        {false && (selectedTiles.length > 0 || selectedOperators.length > 0) && (
+          <motion.div 
+            className="flex justify-center mb-2"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="bg-white/80 px-3 py-1 rounded-lg shadow-sm border">
+              <p className="text-sm text-gray-700 font-medium">
+                Current: {formatCalculation(selectedTiles, selectedOperators)}
+                {selectedTiles.length === config.tilesCount && selectedOperators.length === config.operatorsCount && (
+                  <span className="ml-2 text-blue-600">
+                    = {calculatePathResult(selectedTiles, selectedOperators)}
+                  </span>
+                )}
+              </p>
+            </div>
+          </motion.div>
+        )}
 
         {/* Game Grid */}
         <div className="flex justify-center mb-2 sm:mb-4 px-0 flex-1 overflow-hidden">
@@ -428,6 +650,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({ difficulty }) 
                             isSelected={isTileSelected(tile)}
                             isInPath={isTileInPath(tile)}
                             pathIndex={getPathIndex(tile)}
+                            isInHint={isTileInHint(tile)}
+                            hintPathIndex={getHintPathIndex(tile)}
                             size={getTileSize()}
                           />
                         </motion.div>

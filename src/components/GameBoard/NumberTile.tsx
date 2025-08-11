@@ -7,6 +7,8 @@ interface NumberTileProps {
   isSelected: boolean;
   isInPath: boolean;
   pathIndex?: number;
+  isInHint?: boolean;
+  hintPathIndex?: number;
   size?: 'small' | 'medium' | 'large';
 }
 
@@ -15,6 +17,8 @@ export const NumberTile: React.FC<NumberTileProps> = ({
   isSelected,
   isInPath,
   pathIndex,
+  isInHint = false,
+  hintPathIndex,
   size = 'medium'
 }) => {
   const sizeClasses = {
@@ -41,6 +45,9 @@ export const NumberTile: React.FC<NumberTileProps> = ({
     if (isSelected) {
       return 'bg-gradient-to-br from-green-500 to-green-600 text-white border-green-600 shadow-lg ring-2 ring-green-300';
     }
+    if (isInHint) {
+      return 'bg-gradient-to-br from-yellow-400 to-yellow-500 text-yellow-900 border-yellow-500 shadow-lg ring-2 ring-yellow-300 animate-pulse';
+    }
     return 'bg-gradient-to-br from-white to-gray-50 text-gray-800 border-gray-300 hover:border-blue-400 hover:shadow-lg hover:scale-105';
   };
 
@@ -50,8 +57,8 @@ export const NumberTile: React.FC<NumberTileProps> = ({
       className={`${baseClasses} ${getStateClasses()}`}
       initial={{ scale: 1 }}
       animate={{
-        scale: isInPath ? 1.05 : isSelected ? 1.02 : 1,
-        zIndex: isInPath ? 10 : isSelected ? 5 : 1
+        scale: isInPath ? 1.05 : isSelected ? 1.02 : isInHint ? 1.03 : 1,
+        zIndex: isInPath ? 10 : isSelected ? 5 : isInHint ? 3 : 1
       }}
       transition={{
         type: "spring",
@@ -69,6 +76,16 @@ export const NumberTile: React.FC<NumberTileProps> = ({
           transition={{ delay: 0.1 }}
         >
           {pathIndex + 1}
+        </motion.div>
+      )}
+      {isInHint && typeof hintPathIndex === 'number' && (
+        <motion.div
+          className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500 text-xs font-bold rounded-full flex items-center justify-center text-white"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          {hintPathIndex + 1}
         </motion.div>
       )}
     </motion.div>
