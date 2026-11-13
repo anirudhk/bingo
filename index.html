@@ -2,23 +2,59 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/bingo/favicon.svg" />
-    <link rel="apple-touch-icon" href="/bingo/apple-touch-icon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Grid Genius - A fun educational game for learning math through interactive puzzle solving" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="mask-icon" href="./masked-icon.svg" color="#4F46E5" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="description" content="Grid Genius — a free, open math puzzle game. Tap numbers and operators along straight paths to reach the target." />
     <meta name="theme-color" content="#4F46E5" />
+
+    <!-- iOS / mobile webapp -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Grid Genius" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="msapplication-TileColor" content="#4F46E5" />
     <meta name="msapplication-tap-highlight" content="no" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Grid Genius" />
+    <meta property="og:description" content="A free, open math puzzle game. Tap numbers and operators along straight paths to reach the target." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://anirudhk.github.io/bingo/" />
+    <meta property="og:image" content="https://anirudhk.github.io/bingo/pwa-512x512.png" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Grid Genius" />
+    <meta name="twitter:description" content="A free, open math puzzle game. Tap numbers and operators along straight paths to reach the target." />
+    <meta name="twitter:image" content="https://anirudhk.github.io/bingo/pwa-512x512.png" />
+
     <title>Grid Genius</title>
-    <script type="module" crossorigin src="/bingo/assets/index-d6e7f627.js"></script>
-    <link rel="stylesheet" href="/bingo/assets/index-a045a6fc.css">
-  <link rel="manifest" href="/bingo/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/bingo/registerSW.js"></script></head>
+
+    <script>
+      // Single-Page-Apps for GitHub Pages — restores the path that 404.html
+      // encoded into the query string, then hands off to React Router.
+      // MIT-licensed snippet by Rafael Pedicini (rafgraph/spa-github-pages).
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) {
+              return s.replace(/~and~/g, '&');
+            })
+            .join('?');
+          window.history.replaceState(null, '', l.pathname.slice(0, -1) + decoded + l.hash);
+        }
+      })(window.location);
+    </script>
+    <script type="module" crossorigin src="/bingo/assets/index-5f2183f3.js"></script>
+    <link rel="stylesheet" href="/bingo/assets/index-67fb53cc.css">
+  <link rel="manifest" href="/bingo/manifest.webmanifest"></head>
   <body>
     <div id="root"></div>
     
   </body>
-</html> 
+</html>
