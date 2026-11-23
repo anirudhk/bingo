@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthOptional } from '../../auth/authContext';
+import { MultiplayerGuestGate } from './MultiplayerGuestGate';
 import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { ButtonGameBoard } from '../GameBoard/ButtonGameBoard';
 import { useGameStore } from '../../store/gameStore';
@@ -213,14 +214,7 @@ export const MultiplayerSessionPage: React.FC = () => {
   }
 
   if (!auth?.user) {
-    return (
-      <div className="p-4 text-sm">
-        <Link to="/learn" className="font-bold text-lime-700">
-          ← Back
-        </Link>
-        <p className="mt-4">Sign in required.</p>
-      </div>
-    );
+    return <MultiplayerGuestGate reason="Join this match as a guest, or sign in." />;
   }
 
   if (session === undefined) {

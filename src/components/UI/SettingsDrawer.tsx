@@ -185,10 +185,12 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open, onClose, o
                   <p className="text-xs text-gray-500 dark:text-gray-400">
                     Cloud accounts are not configured (set Supabase env vars to enable).
                   </p>
-                ) : !auth?.user ? (
+                ) : !auth?.user || auth.isGuest ? (
                   <div className="space-y-2">
                     <p className="text-xs text-gray-500 dark:text-gray-400">
-                      Play as a guest, or sign in to sync progress and join leaderboards.
+                      {auth?.isGuest
+                        ? 'Playing multiplayer as a guest (unrated). Sign in to keep ratings and join leaderboards.'
+                        : 'Play as a guest, or sign in to sync progress and join leaderboards.'}
                     </p>
                     <button
                       type="button"
@@ -197,6 +199,15 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open, onClose, o
                     >
                       Save my progress
                     </button>
+                    {auth?.isGuest && (
+                      <button
+                        type="button"
+                        onClick={() => void auth.signOut()}
+                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-800"
+                      >
+                        Stop playing as guest
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3 text-xs">

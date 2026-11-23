@@ -28,7 +28,8 @@ export const DailyPuzzlePage: React.FC = () => {
   const today = useMemo(() => new Date(), []);
   const auth = useAuthOptional();
   const sb = useSupabase();
-  const signedIn = Boolean(sb && auth?.user);
+  // Guests play the daily offline; the leaderboard is for accounts.
+  const signedIn = Boolean(sb && auth?.user && !auth.isGuest);
 
   // Signed-in players get today's puzzle from the server, which also starts
   // the official clock. undefined = still asking; null = play offline.
@@ -37,7 +38,7 @@ export const DailyPuzzlePage: React.FC = () => {
 
   useEffect(() => {
     if (auth?.loading) return;
-    if (!sb || !auth?.user) {
+    if (!sb || !auth?.user || auth.isGuest) {
       setCloudAttempt(null);
       return;
     }
@@ -48,7 +49,7 @@ export const DailyPuzzlePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [sb, auth?.user, auth?.loading]);
+  }, [sb, auth?.user, auth?.loading, auth?.isGuest]);
 
   const puzzle = useMemo(() => {
     if (!puzzles.length) return null;
