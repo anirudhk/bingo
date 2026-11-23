@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthOptional } from '../../auth/authContext';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import type { DifficultyLevel } from '../../types/game';
 import { logger } from '../../utils/logger';
 
@@ -23,7 +23,7 @@ interface OpenChallengeRow {
 export const MultiplayerLobbyPage: React.FC = () => {
   const auth = useAuthOptional();
   const navigate = useNavigate();
-  const sb = useMemo(() => getSupabase(), []);
+  const sb = useSupabase();
 
   const [difficulty, setDifficulty] = useState<DifficultyLevel>('medium');
   const [rounds, setRounds] = useState(3);

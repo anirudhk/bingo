@@ -55,6 +55,8 @@ export interface GameState {
   currentLevelId: string | null;
   /** Wrong submissions in this session — used by ResultPage to compute stars in learning mode. */
   wrongAttempts: number;
+  /** Hints revealed this session — they cost stars like wrong answers. */
+  hintsUsed: number;
   /** Active static-puzzle id (only meaningful when gameMode === 'dailyPuzzle'). */
   currentPuzzleId: string | null;
 }

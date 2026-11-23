@@ -7,6 +7,7 @@ const signInWithOAuth = vi.fn().mockResolvedValue({ error: null });
 
 vi.mock('../../lib/supabase/client', () => ({
   isSupabaseConfigured: () => true,
+  useSupabase: () => ({ auth: { signInWithOtp, signInWithOAuth } }),
   getSupabase: () => ({ auth: { signInWithOtp, signInWithOAuth } }),
 }));
 vi.mock('../../auth/authContext', () => ({ useAuthOptional: () => null }));

@@ -354,3 +354,43 @@ describe('init retry cap', () => {
     vi.doUnmock('../utils/gridGenerator');
   });
 });
+
+describe('hints and hidden tabs', () => {
+  it('recordHint deducts the penalty and counts the hint', () => {
+    useGameStore.getState().initializeLevel('u1-l1');
+    useGameStore.setState({ score: 20 });
+    useGameStore.getState().recordHint(5);
+    expect(useGameStore.getState().score).toBe(15);
+    expect(useGameStore.getState().hintsUsed).toBe(1);
+  });
+
+  it('does not count time while the tab is hidden', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    const start = useGameStore.getState().roundStartTime!;
+    useGameStore.getState().setPageHidden(true);
+    vi.advanceTimersByTime(60_000);
+    useGameStore.getState().setPageHidden(false);
+    // The round start moved forward by the hidden minute.
+    expect(useGameStore.getState().roundStartTime! - start).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it('holds auto-advance while hidden and advances on return', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    const grid = useGameStore.getState().grid;
+    useGameStore.setState({ currentTarget: grid[0].value + grid[1].value });
+    useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
+    useGameStore.getState().setPageHidden(true);
+    vi.advanceTimersByTime(5_000);
+    expect(useGameStore.getState().currentRound).toBe(1);
+    useGameStore.getState().setPageHidden(false);
+    expect(useGameStore.getState().currentRound).toBe(2);
+  });
+
+  it('Time Attack keeps running while hidden', () => {
+    useGameStore.getState().initializeGame('easy', 'timeAttack');
+    useGameStore.getState().setPageHidden(true);
+    vi.advanceTimersByTime(61_000);
+    expect(useGameStore.getState().gameStatus).toBe('completed');
+    useGameStore.getState().setPageHidden(false);
+  });
+});

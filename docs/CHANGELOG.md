@@ -12,6 +12,16 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Changed — launch polish (2026-11-23)
+
+- **Faster first load:** the Supabase SDK loads on demand (`loadSupabase` / `useSupabase`) and multiplayer, profile, leaderboard and legal screens are lazy routes. Main bundle 663 → 425 KB (134 KB gzipped).
+- **Hints cost a star** on Learn levels, like a wrong answer.
+- **Wrong paths stay visible** until the next tap; negative intermediate steps are explained in the feedback.
+- **Hidden tab pauses** the round clock and auto-advance (not Time Attack or multiplayer).
+- **Play-mode selection survives a refresh** (session storage).
+- **Install prompt** waits until the player has completed something.
+- Levels `u2-l1` / `u2-l5` no longer accept a target of 0.
+
 ### Security — launch hardening (2026-11-23, `docs/LAUNCH_CHECKLIST.md`)
 
 - **Every database function was callable by anonymous visitors** (Postgres grants `EXECUTE` to `PUBLIC` by default), including `internal_mp_apply_elo`, which rewrites ratings. All functions are now revoked and only the app's entry points are granted back. Migration `20261123000000_launch_hardening.sql`.

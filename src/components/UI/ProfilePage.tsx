@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { useAuthOptional } from '../../auth/authContext';
 import { validateHandle } from '../../utils/handleValidation';
 import { logger } from '../../utils/logger';
@@ -31,7 +31,7 @@ export const ProfilePage: React.FC = () => {
   const { handle } = useParams<{ handle: string }>();
   const navigate = useNavigate();
   const auth = useAuthOptional();
-  const sb = useMemo(() => getSupabase(), []);
+  const sb = useSupabase();
 
   const [profile, setProfile] = useState<ProfileRow | null | undefined>(undefined);
   const [ratings, setRatings] = useState<RatingRow[]>([]);

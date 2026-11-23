@@ -6,7 +6,7 @@ import { feedback, supportsHaptics } from '../../utils/feedback';
 import { BOARD_THEMES, isBoardThemeUnlocked } from '../../constants/boardThemes';
 import { useProgressStore } from '../../store/progressStore';
 import { useAuthOptional } from '../../auth/authContext';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { logger } from '../../utils/logger';
 
 interface SettingsDrawerProps {
@@ -36,7 +36,7 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open, onClose, o
   const boardTheme = usePrefsStore((s) => s.boardTheme);
   const setBoardTheme = usePrefsStore((s) => s.setBoardTheme);
   const auth = useAuthOptional();
-  const sb = getSupabase();
+  const sb = useSupabase();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const [accountMsg, setAccountMsg] = useState<string | null>(null);
 

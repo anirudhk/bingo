@@ -7,7 +7,7 @@ import { useGameStore } from '../../store/gameStore';
 import { usePuzzles } from '../../hooks/usePuzzles';
 import { pickTodaysDailyPuzzle, utcDateKey } from '../../utils/puzzleStore';
 import { useAuthOptional } from '../../auth/authContext';
-import { getSupabase } from '../../lib/supabase/client';
+import { useSupabase } from '../../lib/supabase/client';
 import {
   startDailyAttempt,
   submitDailyGuess,
@@ -27,7 +27,7 @@ export const DailyPuzzlePage: React.FC = () => {
   const { puzzles, loading, error } = usePuzzles();
   const today = useMemo(() => new Date(), []);
   const auth = useAuthOptional();
-  const sb = useMemo(() => getSupabase(), []);
+  const sb = useSupabase();
   const signedIn = Boolean(sb && auth?.user);
 
   // Signed-in players get today's puzzle from the server, which also starts

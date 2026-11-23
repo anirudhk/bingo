@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { useProgressStore } from './progressStore';
+import { computeStars, useProgressStore } from './progressStore';
 
 const reset = () => {
   useProgressStore.getState().resetProgress();
@@ -95,5 +95,14 @@ describe('progressStore.recordPlayModeBests', () => {
       timeAttackRoundsCompleted: 8,
     });
     expect(useProgressStore.getState().playBests.timeAttackBestRounds).toBe(8);
+  });
+});
+
+describe('computeStars with hints', () => {
+  it('a hint costs a star like a wrong answer', () => {
+    expect(computeStars(0, 0)).toBe(3);
+    expect(computeStars(0, 1)).toBe(2);
+    expect(computeStars(1, 1)).toBe(1);
+    expect(computeStars(0, 5)).toBe(1);
   });
 });

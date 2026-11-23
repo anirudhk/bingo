@@ -229,8 +229,10 @@ export const getLevelProgress = (
 ): LevelProgress => levels[id] ?? { completed: false, bestStars: 0, bestScore: 0, playCount: 0 };
 
 /** Pure helper to compute stars from accuracy. Exported so ResultPage and tests share it. */
-export const computeStars = (wrongAttempts: number): Stars => {
-  if (wrongAttempts === 0) return 3;
-  if (wrongAttempts <= 1) return 2;
+/** Stars for a Learn level: each wrong answer or hint costs a star (minimum 1). */
+export const computeStars = (wrongAttempts: number, hintsUsed = 0): Stars => {
+  const slips = wrongAttempts + hintsUsed;
+  if (slips === 0) return 3;
+  if (slips <= 1) return 2;
   return 1;
 };

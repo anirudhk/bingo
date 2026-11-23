@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { isSupabaseConfigured, useSupabase } from '../../lib/supabase/client';
 import { useAuthOptional } from '../../auth/authContext';
 import { logger } from '../../utils/logger';
 
@@ -8,10 +8,16 @@ import { logger } from '../../utils/logger';
 export const MeRedirectPage: React.FC = () => {
   const auth = useAuthOptional();
   const navigate = useNavigate();
-  const sb = getSupabase();
+  const sb = useSupabase();
 
   useEffect(() => {
-    if (!isSupabaseConfigured() || !sb || !auth?.user) {
+    if (!isSupabaseConfigured()) {
+      navigate('/learn', { replace: true });
+      return;
+    }
+    // Wait for the SDK to load and the session to be restored.
+    if (!sb || auth?.loading) return;
+    if (!auth?.user) {
       navigate('/learn', { replace: true });
       return;
     }
@@ -42,7 +48,7 @@ export const MeRedirectPage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [auth?.user, navigate, sb]);
+  }, [auth?.user, auth?.loading, navigate, sb]);
 
   return (
     <div className="h-full flex items-center justify-center text-sm text-slate-500">
