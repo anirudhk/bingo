@@ -224,3 +224,39 @@ describe('<ResultPage /> rewards & sharing', () => {
     expect(screen.getByRole('button', { name: /copied/i })).toBeInTheDocument();
   });
 });
+
+describe('<ResultPage /> star guidance', () => {
+  it('explains how to earn 3 stars when the player got fewer', () => {
+    act(() => {
+      useGameStore.setState({
+        gameMode: 'learning',
+        currentLevelId: 'u1-l2',
+        wrongAttempts: 2,
+        score: 30,
+        gameStatus: 'completed',
+        totalRounds: 5,
+        difficulty: 'easy',
+      });
+    });
+    renderResult();
+    expect(screen.getByText('Level complete!')).toBeInTheDocument();
+    expect(screen.getByText(/no wrong answers and no hints for 3 stars/i)).toBeInTheDocument();
+  });
+
+  it('celebrates a perfect run without the tip', () => {
+    act(() => {
+      useGameStore.setState({
+        gameMode: 'learning',
+        currentLevelId: 'u1-l2',
+        wrongAttempts: 0,
+        score: 50,
+        gameStatus: 'completed',
+        totalRounds: 5,
+        difficulty: 'easy',
+      });
+    });
+    renderResult();
+    expect(screen.getByText('Perfect!')).toBeInTheDocument();
+    expect(screen.queryByText(/for 3 stars/i)).not.toBeInTheDocument();
+  });
+});

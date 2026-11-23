@@ -90,7 +90,7 @@ export const HomeShell: React.FC = () => {
     <div className="h-full bg-gradient-to-br from-lime-50 via-white to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 lg:flex">
       <FirstRunTutorial />
       <aside className="hidden w-56 shrink-0 border-r border-white/70 bg-white/75 px-4 py-5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/80 lg:block">
-        <div className="mb-8 text-2xl font-black tracking-tight text-[#58cc02]">grid genius</div>
+        <div className="mb-8 text-2xl font-black tracking-tight text-green-700">grid genius</div>
         <nav className="space-y-2" aria-label="Main navigation">
           <SideTabLink to="/learn" label="Learn" icon="🏠" />
           <SideTabLink to="/play" label="Play" icon="🎮" />
@@ -132,7 +132,7 @@ export const HomeShell: React.FC = () => {
             <h1 className="text-xl font-black tracking-tight text-slate-900 dark:text-white lg:hidden">
               Grid Genius
             </h1>
-            <p className="hidden text-xs font-semibold text-slate-400 dark:text-slate-500 sm:block lg:hidden">
+            <p className="hidden text-xs font-semibold text-slate-500 dark:text-slate-400 sm:block lg:hidden">
               Make numbers. Build confidence.
             </p>
           </div>
@@ -141,7 +141,7 @@ export const HomeShell: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setAuthOpen(true)}
-                className="whitespace-nowrap rounded-full bg-lime-500 px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-sm hover:bg-lime-600"
+                className="whitespace-nowrap rounded-full bg-green-700 px-3 py-1 text-xs font-black uppercase tracking-wide text-white shadow-sm hover:bg-green-800"
               >
                 Sign in
               </button>
@@ -166,7 +166,7 @@ export const HomeShell: React.FC = () => {
               type="button"
               aria-label="Open settings"
               onClick={() => setSettingsOpen(true)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500 shadow-sm transition-colors hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white text-lg leading-none lg:hidden"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-100 text-slate-500 shadow-sm transition-colors hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white text-lg leading-none lg:hidden"
             >
               ⚙
             </button>
@@ -208,7 +208,7 @@ const TabLink: React.FC<{ to: string; label: string }> = ({ to, label }) => (
         aria-selected={isActive}
         className={`block rounded-2xl py-2.5 text-center text-sm font-black transition-all ${
           isActive
-            ? 'bg-[#58cc02] text-white shadow-md shadow-lime-200 dark:bg-lime-600 dark:shadow-none'
+            ? 'bg-green-700 text-white shadow-md shadow-lime-200 dark:bg-green-700 dark:shadow-none'
             : 'text-slate-500 hover:bg-white/80 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100'
         }`}
       >

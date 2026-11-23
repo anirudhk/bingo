@@ -78,7 +78,7 @@ export const LearningPath: React.FC = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-lime-500 p-5 text-white shadow-lg shadow-emerald-500/20 dark:from-emerald-600 dark:to-lime-600 dark:shadow-none"
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 to-green-700 p-5 text-white shadow-lg shadow-emerald-700/20 dark:from-emerald-800 dark:to-green-800 dark:shadow-none"
         >
           <div
             className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-white/10"

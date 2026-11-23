@@ -79,7 +79,7 @@ export const GameModeSelector: React.FC<GameModeSelectorProps> = ({ onSelect, se
   return (
     <div className="mx-auto h-full max-w-5xl px-4 py-6 lg:px-8 lg:py-10">
       <motion.section
-        className="relative mb-5 overflow-hidden rounded-2xl bg-[#58cc02] p-4 text-white shadow-xl shadow-lime-200/70 dark:shadow-lime-950/30"
+        className="relative mb-5 overflow-hidden rounded-2xl bg-green-700 p-4 text-white shadow-xl shadow-lime-200/70 dark:shadow-lime-950/30"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}

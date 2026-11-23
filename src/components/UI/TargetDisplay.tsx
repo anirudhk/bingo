@@ -1,15 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-
-const rhythmInstruction = (pathTiles: number, pathOperators: number): string => {
-  let line: string;
-  if (pathTiles === 2 && pathOperators === 1) {
-    line = 'Straight row/column; tile → operator → tile.';
-  } else {
-    line = `Straight row/column; ${pathTiles} numbers & ${pathOperators} operators (tile → operator → … → tile).`;
-  }
-  return `${line} Left-to-right: ((a + b) × c), not BODMAS.`;
-};
+import { rhythmInstruction } from '../../utils/rhythmInstruction';
 
 interface TargetDisplayProps {
   currentTarget: number;
@@ -19,6 +10,10 @@ interface TargetDisplayProps {
   pathTiles?: number;
   /** Operators between numbers (e.g. 1 or 2). */
   pathOperators?: number;
+  /** The current round has been answered correctly (counts toward progress). */
+  roundSolved?: boolean;
+  /** Signs on this board; the left-to-right rule only shows when × is one. */
+  operators?: readonly string[];
   /** Tighter card for large grids (4×4 / 5×5) so the board fits. */
   compact?: boolean;
 }
@@ -28,11 +23,14 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
   round,
   totalRounds,
   pathTiles = 2,
-  pathOperators = 1,
+  operators = [],
+  roundSolved = false,
   compact = false,
 }) => {
-  const progressPercentage = totalRounds > 0 ? (round / totalRounds) * 100 : 0;
-  const hint = rhythmInstruction(pathTiles, pathOperators);
+  // Progress counts questions answered correctly — it only moves on a solve.
+  const solvedCount = Math.max(0, round - 1) + (roundSolved ? 1 : 0);
+  const progressPercentage = totalRounds > 0 ? (solvedCount / totalRounds) * 100 : 0;
+  const hint = rhythmInstruction(pathTiles, operators);
 
   return (
     <div className={`flex flex-col items-center ${compact ? 'mb-1 sm:mb-2' : 'mb-2 sm:mb-3'}`}>
@@ -42,7 +40,7 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
         }`}
       >
         <div
-          className={`font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 ${
+          className={`font-black uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400 ${
             compact ? 'text-[9px]' : 'text-[10px]'
           }`}
         >
@@ -53,7 +51,7 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
           role="status"
           aria-live="polite"
           aria-label={`Target number ${currentTarget}${totalRounds > 1 ? `, round ${round} of ${totalRounds}` : ''}`}
-          className={`mx-auto inline-flex min-w-28 items-center justify-center rounded-[1.35rem] bg-gradient-to-br from-lime-400 via-[#58cc02] to-emerald-500 text-white shadow-lg ${
+          className={`mx-auto inline-flex min-w-28 items-center justify-center rounded-[1.35rem] bg-gradient-to-br from-green-600 to-emerald-600 text-white shadow-lg ${
             compact ? 'mt-1 px-5 py-2' : 'mt-1.5 px-7 py-2.5'
           }`}
           initial={{ scale: 0.8, opacity: 0 }}
@@ -76,11 +74,14 @@ export const TargetDisplay: React.FC<TargetDisplayProps> = ({
           {hint}
         </p>
 
-        {totalRounds > 1 && (
+        {/* Time Attack has no fixed number of rounds, so no bar there. */}
+        {totalRounds > 1 && totalRounds < 100 && (
           <div className={compact ? 'mt-1.5' : 'mt-2'}>
-            <div className="mb-1 flex justify-between text-[11px] font-black text-slate-400 dark:text-slate-500">
-              <span>Round {round}</span>
-              <span>{totalRounds} total</span>
+            <div className="mb-1 flex justify-between text-[11px] font-black text-slate-500 dark:text-slate-400">
+              <span>Question {round}</span>
+              <span>
+                {solvedCount} of {totalRounds} solved
+              </span>
             </div>
             <div className="h-3 w-full rounded-full bg-slate-100 shadow-inner dark:bg-slate-800">
               <motion.div

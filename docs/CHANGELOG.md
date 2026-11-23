@@ -12,6 +12,16 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Changed — UI feedback round (2026-11-24)
+
+- **Duolingo-style answer bar:** full-width at the bottom, stays until the player taps **Continue** / **Try again** (Time Attack and multiplayer still dismiss it automatically). The old floating box sat off-centre because its animation overrode the centring. The round clock stops at the solve, so reading the bar isn't timed.
+- **Kid-friendly misses:** "You need 4 more to make 9" / "That's 4 too many", instead of "Off by -4".
+- **Progress counts solved questions:** the bar starts empty and moves only on a correct answer ("2 of 5 solved"); the duplicate "Round" chip is gone.
+- **Bigger tap targets:** each operator's tap area fills its share of the gap (3×3: 62×31 / 31×52 px); Back and Settings are 44 px.
+- **Readability:** grey labels darkened to slate-500 (#64748B); white text now sits on green-700 instead of #58cc02 (2.2:1 → about 5:1); the target number uses a darker green.
+- **Calmer lessons:** no timer on Learn levels; the rules line is plain language and only mentions left-to-right order once × appears (Unit 4+).
+- **Clear** is a neutral button; the completion screen says how to earn 3 stars and the title matches the stars; backgrounds reach the bottom of the screen.
+
 ### Added — guest multiplayer (2026-11-24)
 
 - **Play online without an account.** "Play as guest" uses Supabase anonymous sign-in (no email). Guests can use friend links and Quick match; their games are unrated, their profiles private, and they're deleted after 30 days idle. The daily leaderboard stays for accounts (guests play the daily offline). Migration `20261124000000_guest_multiplayer.sql`; needs "Allow anonymous sign-ins" in Supabase.

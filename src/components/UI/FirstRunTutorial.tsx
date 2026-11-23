@@ -83,7 +83,7 @@ export const FirstRunTutorial: React.FC = () => {
               if (atLast) finish();
               else setStep((s) => s + 1);
             }}
-            className="w-full rounded-2xl bg-[#58cc02] px-4 py-3 text-sm font-black text-white shadow-lg shadow-lime-200/60 sm:w-auto sm:min-w-[8rem] dark:shadow-none"
+            className="w-full rounded-2xl bg-green-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-lime-200/60 sm:w-auto sm:min-w-[8rem] dark:shadow-none"
           >
             {atLast ? 'Let’s play' : 'Next'}
           </button>
