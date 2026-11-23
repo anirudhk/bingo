@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
-import { getSupabase, isSupabaseConfigured } from '../lib/supabase/client';
+import { getSupabase, isSupabaseConfigured, loadSupabase } from '../lib/supabase/client';
 import { AuthContext } from './authContext';
 import {
   readSupabaseAuthErrorFromLocation,
@@ -21,52 +21,70 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const clearAuthRedirectError = useCallback(() => setAuthRedirectError(null), []);
 
   useEffect(() => {
-    const sb = getSupabase();
-    if (!sb) {
+    if (!isSupabaseConfigured()) {
       setLoading(false);
       return;
     }
 
     let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
 
-    void sb.auth.getSession().then(({ data, error }) => {
-      if (cancelled) return;
-      if (error) logger.warn('getSession', error.message);
+    void loadSupabase()
+      .then((sb) => {
+        if (cancelled) return;
+        if (!sb) {
+          setLoading(false);
+          return;
+        }
+        unsubscribe = listenToAuth(sb);
+      })
+      .catch((e) => {
+        logger.warn('supabase load failed', String(e));
+        if (!cancelled) setLoading(false);
+      });
 
-      setSession(data.session ?? null);
-      setLoading(false);
+    const listenToAuth = (sb: NonNullable<ReturnType<typeof getSupabase>>) => {
+      void sb.auth.getSession().then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) logger.warn('getSession', error.message);
 
-      if (data.session?.user) {
-        void mergeCloudProgressOnLogin(sb, data.session.user.id);
-        stripSupabaseAuthParamsFromUrl();
-      } else {
-        const redirectErr = readSupabaseAuthErrorFromLocation();
-        if (redirectErr) {
-          setAuthRedirectError(redirectErr);
+        setSession(data.session ?? null);
+        setLoading(false);
+
+        if (data.session?.user) {
+          void mergeCloudProgressOnLogin(sb, data.session.user.id);
+          stripSupabaseAuthParamsFromUrl();
+        } else {
+          const redirectErr = readSupabaseAuthErrorFromLocation();
+          if (redirectErr) {
+            setAuthRedirectError(redirectErr);
+            stripSupabaseAuthParamsFromUrl();
+          }
+        }
+      });
+
+      const {
+        data: { subscription },
+      } = sb.auth.onAuthStateChange((event, next) => {
+        setSession(next);
+        if (event === 'SIGNED_IN' && next?.user) {
+          try {
+            sessionStorage.setItem('gg:authWelcome', '1');
+          } catch {
+            // ignore (private mode, etc.)
+          }
+          void mergeCloudProgressOnLogin(sb, next.user.id);
+          void pushLocalProgressToCloud(sb, next.user.id);
           stripSupabaseAuthParamsFromUrl();
         }
-      }
-    });
+      });
 
-    const {
-      data: { subscription },
-    } = sb.auth.onAuthStateChange((event, next) => {
-      setSession(next);
-      if (event === 'SIGNED_IN' && next?.user) {
-        try {
-          sessionStorage.setItem('gg:authWelcome', '1');
-        } catch {
-          // ignore (private mode, etc.)
-        }
-        void mergeCloudProgressOnLogin(sb, next.user.id);
-        void pushLocalProgressToCloud(sb, next.user.id);
-        stripSupabaseAuthParamsFromUrl();
-      }
-    });
+      return () => subscription.unsubscribe();
+    };
 
     return () => {
       cancelled = true;
-      subscription.unsubscribe();
+      unsubscribe?.();
     };
   }, []);
 

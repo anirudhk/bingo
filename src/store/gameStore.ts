@@ -39,6 +39,10 @@ interface GameStore extends GameState {
   cleanup: () => void;
   /** Subtract from score (e.g. hint penalty), floored at zero. */
   deductScore: (amount: number) => void;
+  /** A hint was revealed: apply the score penalty and count it (hints cost stars). */
+  recordHint: (penalty: number) => void;
+  /** Tab hidden/shown: pause the round clock and hold auto-advance while hidden. */
+  setPageHidden: (hidden: boolean) => void;
   setDifficulty: (difficulty: DifficultyLevel) => void;
   setGameMode: (gameMode: GameMode) => void;
   pauseGame: () => void;
@@ -65,6 +69,10 @@ const cloneGridTiles = (tiles: Tile[]): Tile[] =>
 // never trigger a React re-render. Centralised so cleanup() can clear them all.
 let timeAttackInterval: ReturnType<typeof setInterval> | null = null;
 let autoAdvanceTimeout: ReturnType<typeof setTimeout> | null = null;
+// Page visibility: while hidden, the round clock is paused and a due
+// auto-advance waits until the player is back.
+let pageHiddenAt: number | null = null;
+let advanceWhenVisible = false;
 
 const clearTimeAttackInterval = () => {
   if (timeAttackInterval !== null) {
@@ -99,6 +107,7 @@ const createInitialState = (): GameState => ({
   initError: null,
   currentLevelId: null,
   wrongAttempts: 0,
+  hintsUsed: 0,
   roundSolved: false,
   currentPuzzleId: null,
 });
@@ -196,6 +205,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       initError: null,
       currentLevelId: null,
       wrongAttempts: 0,
+      hintsUsed: 0,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -262,6 +272,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       initError: null,
       currentLevelId: levelId,
       wrongAttempts: 0,
+      hintsUsed: 0,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -291,6 +302,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       initError: null,
       currentLevelId: null,
       wrongAttempts: 0,
+      hintsUsed: 0,
       roundSolved: false,
       currentPuzzleId: puzzle.id,
     });
@@ -335,6 +347,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       initError: null,
       currentLevelId: null,
       wrongAttempts: 0,
+      hintsUsed: 0,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -397,6 +410,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     clearAutoAdvance();
     autoAdvanceTimeout = setTimeout(() => {
       autoAdvanceTimeout = null;
+      if (pageHiddenAt !== null) {
+        advanceWhenVisible = true;
+        return;
+      }
       get().nextRound();
     }, SUCCESS_DELAY_MS);
 
@@ -477,11 +494,40 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cleanup: () => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    advanceWhenVisible = false;
   },
 
   deductScore: (amount: number) => {
     if (amount <= 0) return;
     set((state) => ({ score: Math.max(0, state.score - amount) }));
+  },
+
+  recordHint: (penalty: number) => {
+    set((state) => ({
+      score: Math.max(0, state.score - Math.max(0, penalty)),
+      hintsUsed: state.hintsUsed + 1,
+    }));
+  },
+
+  setPageHidden: (hidden: boolean) => {
+    const { gameMode, gameStatus, roundStartTime } = get();
+    // Time Attack is a real-time challenge and multiplayer is timed by the
+    // server, so neither pauses.
+    const pausable = gameMode !== 'timeAttack' && gameMode !== 'multiplayer';
+    if (hidden) {
+      if (pageHiddenAt === null) pageHiddenAt = Date.now();
+      return;
+    }
+    if (pageHiddenAt === null) return;
+    const hiddenFor = Date.now() - pageHiddenAt;
+    pageHiddenAt = null;
+    if (pausable && gameStatus === 'playing' && roundStartTime !== null) {
+      set({ roundStartTime: roundStartTime + hiddenFor });
+    }
+    if (advanceWhenVisible) {
+      advanceWhenVisible = false;
+      get().nextRound();
+    }
   },
 
   setDifficulty: (difficulty: DifficultyLevel) => {

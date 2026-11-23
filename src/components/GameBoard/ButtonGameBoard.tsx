@@ -65,7 +65,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   const initializePuzzle = useGameStore((s) => s.initializePuzzle);
   const initializeMultiplayerRound = useGameStore((s) => s.initializeMultiplayerRound);
   const submitSolution = useGameStore((s) => s.submitSolution);
-  const deductScore = useGameStore((s) => s.deductScore);
+  const recordHint = useGameStore((s) => s.recordHint);
+  const setPageHidden = useGameStore((s) => s.setPageHidden);
   const startRoundTimer = useGameStore((s) => s.startRoundTimer);
   const cleanup = useGameStore((s) => s.cleanup);
   // Freeze the board once the round is solved so it can't be re-submitted
@@ -85,7 +86,10 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     result: null as number | null,
     isCorrect: false,
     target: 0,
+    negativeStep: false,
   });
+  // After a wrong answer the path stays on screen; the next tap starts over.
+  const clearOnNextTapRef = useRef(false);
   const [hintUsedThisRound, setHintUsedThisRound] = useState(false);
   const [hintTiles, setHintTiles] = useState<Tile[]>([]);
   const [hintOperatorPositions, setHintOperatorPositions] = useState<
@@ -226,6 +230,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   // leftover tile ids from the previous board must not stay highlighted.
   useEffect(() => {
     setHintUsedThisRound(false);
+    clearOnNextTapRef.current = false;
     setSelectedTiles([]);
     setSelectedOperators([]);
     setSelectedOperatorPositions([]);
@@ -257,6 +262,16 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     }
     setPathSegments(segs);
   }, [selectedTiles, grid]);
+
+  // Pause the round clock / hold auto-advance while the tab is hidden.
+  useEffect(() => {
+    const onVisibility = () => setPageHidden(document.hidden);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      setPageHidden(false);
+    };
+  }, [setPageHidden]);
 
   useEffect(() => {
     return () => {
@@ -318,6 +333,14 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
 
   const handleTileClick = (tile: Tile) => {
     if (inputLocked) return;
+    if (clearOnNextTapRef.current) {
+      // Start a fresh path from this tile (a single tile is always a legal start).
+      clearSelection();
+      setShowFeedback(false);
+      setSelectedTiles([tile]);
+      feedback('tap');
+      return;
+    }
     // Tapping a selected tile undoes the path back to just before it: keep the
     // tiles before it and the operators between them. This preserves the
     // number → operator → number alternation (dropping only the operators but
@@ -373,6 +396,11 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     position: 'horizontal' | 'vertical'
   ) => {
     if (inputLocked) return;
+    if (clearOnNextTapRef.current) {
+      clearSelection();
+      setShowFeedback(false);
+      return;
+    }
     // If we don't have enough tiles yet, ignore
     if (selectedTiles.length < 1) {
       feedback('invalid');
@@ -446,6 +474,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   };
 
   const clearSelection = () => {
+    clearOnNextTapRef.current = false;
     setSelectedTiles([]);
     setSelectedOperators([]);
     setSelectedOperatorPositions([]);
@@ -469,7 +498,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
 
     const solutions = findValidSolutions();
     if (solutions.length > 0) {
-      deductScore(HINT_SCORE_PENALTY);
+      recordHint(HINT_SCORE_PENALTY);
       feedback('hint');
       setHintUsedThisRound(true);
       const hint = solutions[0];
@@ -650,11 +679,18 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     const calculation = formatCalculationGrouped(tiles, operators, { asciiOperators: true });
     const result = calculatePathResult(tiles, operators);
 
+    // Left-to-right maths can dip below zero mid-way, e.g. (3 − 7) × 2.
+    const negativeStep =
+      tiles.length === 3 &&
+      operators.length === 2 &&
+      (calculatePathResult(tiles.slice(0, 2), operators.slice(0, 1)) ?? 0) < 0;
+
     setFeedbackData({
       calculation,
       result,
       isCorrect,
       target,
+      negativeStep,
     });
     setShowFeedback(true);
 
@@ -666,9 +702,11 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     if (feedbackClearTimeoutRef.current !== null) {
       clearTimeout(feedbackClearTimeoutRef.current);
     }
+    if (!isCorrect) clearOnNextTapRef.current = true;
     feedbackClearTimeoutRef.current = setTimeout(() => {
       feedbackClearTimeoutRef.current = null;
-      clearSelection();
+      // Keep a wrong path visible so the player can see what they tried.
+      if (isCorrect) clearSelection();
       setShowFeedback(false);
     }, FEEDBACK_CLEAR_DELAY_MS);
   };
@@ -1302,6 +1340,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
           result={feedbackData.result}
           target={feedbackData.target}
           isCorrect={feedbackData.isCorrect}
+          negativeStep={feedbackData.negativeStep}
           isVisible={showFeedback}
         />
       </div>

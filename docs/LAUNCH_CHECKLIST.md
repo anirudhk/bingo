@@ -84,7 +84,7 @@ The current design ([MultiplayerSessionPage.tsx](../src/components/UI/Multiplaye
 - [x] **P0 · S** **Commit and push.** About 112 files are uncommitted. GitHub's `main` is still at "added game modes", and the repo is now public, so it shows old code. **Done 2026-11-23:** baseline + fixes committed on branch `launch-blockers`; merge the PR.
 - [x] **P0 · S** **Set the error-report endpoint.** [errorReporter.ts](../src/utils/errorReporter.ts) does nothing until `VITE_ERROR_REPORT_URL` is set (or swap it for Sentry). Without it you're blind to crashes on users' devices. **Done 2026-11-23:** reports go to the project's own Supabase (`report_client_error`, write-only table) unless `VITE_ERROR_REPORT_URL` overrides it.
 - [ ] **P1 · M** **Split [ButtonGameBoard.tsx](../src/components/GameBoard/ButtonGameBoard.tsx)** (about 1,300 lines) into a selection hook, a shared solver (the hint code copies the generator's search) and smaller components.
-- [ ] **P1 · S** **Bundle is 664 KB** (196 KB gzipped) in one file. Lazy-load the multiplayer, auth and Supabase code. Target: under 250 KB for first load.
+- [x] **P1 · S** **Bundle is 664 KB** (196 KB gzipped) in one file. Lazy-load the multiplayer, auth and Supabase code. Target: under 250 KB for first load. **Done 2026-11-23:** Supabase now loads on demand and rarely used screens are separate files: main bundle 663 → 425 KB (196 → 134 KB gzipped). Guest-only builds never download Supabase. The 250 KB target would mean also deferring Framer Motion.
 - [ ] **P1 · S** The game store repeats the same 20-field setup object 5 times; use one `freshRound()` helper.
 - [ ] **P1 · S** Add a deploy workflow (on a `v*` tag → build → GitHub Pages) so releases aren't run by hand from a laptop (EPIC-08.02).
 - [ ] **P2 · S** `gridGenerator.ts` has a duplicate function for each kind of randomness; pass the random-number source in instead.
@@ -101,7 +101,7 @@ The current design ([MultiplayerSessionPage.tsx](../src/components/UI/Multiplaye
 - [ ] **P1 · S** **Show the solution after a wrong answer, and on the result screen.** Today you're told you missed, not what the answer was.
 - [ ] **P1 · S** **Test on real devices:** a cheap Android phone, an iPhone SE-size screen, an iPad, and a school Chromebook. Check tap targets on the 5×5 board (tiles are about 58 px; the operator chips are smaller).
 - [ ] **P1 · S** **Run a Lighthouse audit:** target ≥ 90 for performance, accessibility and best practices, plus a colour-contrast check (EPIC-11.05; never measured).
-- [ ] **P1 · S** **The install prompt appears straight away,** covering the top of the screen on first visit (seen in the live screenshots). Show it after the first completed level instead.
+- [x] **P1 · S** **The install prompt appears straight away,** covering the top of the screen on first visit (seen in the live screenshots). Show it after the first completed level instead. **Done 2026-11-23:** shown only after the player has finished a Learn level or a daily puzzle.
 - [ ] **P2 · M** A mascot or character for the kids' experience: the biggest gap versus Duolingo / Prodigy / Khan Kids.
 - [ ] **P2 · S** Sound check on real devices (volume balance, iOS silent switch) and a quick "turn sound off" option on the game screen.
 
@@ -113,17 +113,17 @@ The current design ([MultiplayerSessionPage.tsx](../src/components/UI/Multiplaye
 
 - [x] **P0 · S** **The weekend daily repeats after about 6 weeks.** Only 19 bundled hard puzzles have a unique answer. Regenerate `puzzles.json` with a few hundred unique-solution hard puzzles (`npm run puzzles:generate` plus a solution-count filter). **Done 2026-11-23:** 160 unique-solution hard puzzles added (`p-daily-hard-*`), about a year of weekends; existing puzzles unchanged.
 - [ ] **P1 · M** **More content.** 25 levels is about 2 hours of play. Add review levels that drill the player's weakest operator, plus 1–2 more units (4-tile paths, division with whole-number answers).
-- [ ] **P1 · S** **Stars ignore hints and time.** A hinted, slow run still earns 3 stars.
+- [x] **P1 · S** **Stars ignore hints and time.** A hinted, slow run still earns 3 stars. **Done 2026-11-23:** each hint now costs a star like a wrong answer; the result screen shows hints used. Time is deliberately left out (it would punish younger players).
 - [ ] **P1 · S** **Order of operations.** The game works left to right, while school teaches × before +. Teachers may push back on this. Either add "real precedence" levels or explain the rule clearly in the parent/teacher pitch.
 - [ ] **P2 · M** Puzzle Storm and Puzzle Streak modes (backlog EPIC-24 / EPIC-53): cheap to build on the current engine.
 
 Still open from the [2026-05-11 review](./REVIEW_2026-05-11.md), and still true in the code:
 
-- [ ] **P1 · S** **Level `u2-l1` still allows a target of 0** (`targetRange.min: 0`), so "a − a" solves it with any matching pair. The review flagged this.
-- [ ] **P1 · S** **Negative intermediate results aren't explained.** For example, (3 − 7) × 2 = −8 on the way to a positive target. Add a line to the tutorial or block negative intermediates on kid levels.
-- [ ] **P1 · S** **The path disappears 2 s after a wrong answer,** so the player can't see what they tried. Keep it highlighted until their next tap.
-- [ ] **P1 · S** **A Play-mode run is lost on page refresh** (wizard state lives only in `App` state).
-- [ ] **P1 · S** **Auto-advance fires while the tab is hidden.** Pause the round timer and auto-advance when the tab isn't visible.
+- [x] **P1 · S** **Level `u2-l1` still allows a target of 0** (`targetRange.min: 0`), so "a − a" solves it with any matching pair. The review flagged this. **Done 2026-11-23:** `u2-l1` and `u2-l5` now start at 1; a test checks every level.
+- [x] **P1 · S** **Negative intermediate results aren't explained.** For example, (3 − 7) × 2 = −8 on the way to a positive target. Add a line to the tutorial or block negative intermediates on kid levels. **Done 2026-11-23:** the feedback message says "Going below zero on the way is fine" when the first step goes negative.
+- [x] **P1 · S** **The path disappears 2 s after a wrong answer,** so the player can't see what they tried. Keep it highlighted until their next tap. **Done 2026-11-23:** a wrong path stays highlighted until the next tap, which starts a fresh path.
+- [x] **P1 · S** **A Play-mode run is lost on page refresh** (wizard state lives only in `App` state). **Done 2026-11-23:** the chosen mode and difficulty are kept in session storage.
+- [x] **P1 · S** **Auto-advance fires while the tab is hidden.** Pause the round timer and auto-advance when the tab isn't visible. **Done 2026-11-23:** the round clock pauses and auto-advance waits while the tab is hidden (Time Attack and multiplayer keep running).
 - [x] **P1 · XS** **`npm run puzzles:validate` isn't in CI.** Add it to `.github/workflows/ci.yml` so a broken `puzzles.json` can't ship. **Done 2026-11-23:** added to CI.
 - [ ] **P2 · S** **Puzzle "ratings" are mislabelled.** `computeRating` sits at its floor value, and calling it "Glicko" is misleading. Rate puzzles by solution count, which the generator now computes.
 - [ ] **P2 · S** **Answers submit on the last tap,** so there's no chance to change your mind. Consider an optional "Check" button for kids' levels.
@@ -165,7 +165,7 @@ The docs disagree with each other and with the code. Fix these before outside co
 
 - [ ] **P1 · S** **ROADMAP.md lists every Phase 3 and 4 epic as not started (`[ ]`),** while BACKLOG.md marks most of their tasks done. Phase 2 says "targeting v0.3.0", but `package.json` is 0.2.0. Update the phase tables and the release calendar.
 - [ ] **P1 · S** **CHANGELOG.md is missing this round of work:** gameplay fixes, Learn redesign, sound and haptics, board themes, daily share, weekly daily difficulty, error reporting, GitHub Pages deploy, repo made public.
-- [ ] **P1 · XS** **README.md is out of date:** it says v0.1.0, "49 tests across 4 files", "Medium/Hard 4×4", and still says "License pending".
+- [x] **P1 · XS** **README.md is out of date:** it says v0.1.0, "49 tests across 4 files", "Medium/Hard 4×4", and still says "License pending". **Done 2026-11-23:** status, test commands and game rules updated. The license line stays until ADR-001 is decided.
 - [ ] **P2 · XS** **DECISIONS.md:** ADR-004 (Supabase) and ADR-005 (Glicko-2) are still "Proposed" though both shipped; mark them Accepted. Add ADRs for "guest-only v1" and "weekly daily-difficulty schedule".
 - [ ] **P2 · XS** **REVIEW_2026-05-11.md:** mark the now-fixed items as fixed (Medium ≈ Hard, no within-game ramp, duplicate targets, Time Attack rebuilding the grid). Otherwise it reads as still open.
 - [ ] **P2 · XS** **`bingo-development-prompt.md`** (repo root) is the original build prompt and describes a different project layout. Move it to `docs/archive/` so new readers don't treat it as current.

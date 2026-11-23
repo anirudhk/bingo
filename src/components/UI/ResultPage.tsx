@@ -49,6 +49,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
   const currentLevelId = useGameStore((s) => s.currentLevelId);
   const currentPuzzleId = useGameStore((s) => s.currentPuzzleId);
   const wrongAttempts = useGameStore((s) => s.wrongAttempts);
+  const hintsUsed = useGameStore((s) => s.hintsUsed);
   const timeAttackRoundsCompleted = useGameStore((s) => s.timeAttackRoundsCompleted);
   const resetGame = useGameStore((s) => s.resetGame);
   const completeLevel = useProgressStore((s) => s.completeLevel);
@@ -63,7 +64,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
 
   const isLearning = gameMode === 'learning' && currentLevelId !== null;
   const isDaily = gameMode === 'dailyPuzzle' && currentPuzzleId !== null;
-  const stars = isLearning ? computeStars(wrongAttempts) : 0;
+  const stars = isLearning ? computeStars(wrongAttempts, hintsUsed) : 0;
   const level = isLearning && currentLevelId ? getLevel(currentLevelId) : undefined;
   const nextLevelId = isLearning && currentLevelId ? getNextLevelId(currentLevelId) : undefined;
   const unit = level ? UNITS.find((u) => u.id === level.unitId) : undefined;
@@ -160,7 +161,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
           <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
             <Stat label="Time" value={formatTime(totalTime)} />
             <Stat label="Wrong taps" value={String(wrongAttempts)} />
-            <Stat label="Rounds" value={String(totalRounds)} />
+            <Stat label="Hints" value={String(hintsUsed)} />
             <Stat label="Score" value={String(score)} />
           </div>
 

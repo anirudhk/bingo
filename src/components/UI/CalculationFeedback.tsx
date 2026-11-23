@@ -7,6 +7,8 @@ interface CalculationFeedbackProps {
   target: number;
   isCorrect: boolean;
   isVisible: boolean;
+  /** The first step went below zero — explain that this is allowed. */
+  negativeStep?: boolean;
 }
 
 export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
@@ -15,6 +17,7 @@ export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
   target,
   isCorrect,
   isVisible,
+  negativeStep = false,
 }) => {
   const getResultColor = () => {
     return isCorrect ? 'text-green-600' : 'text-red-600';
@@ -76,6 +79,12 @@ export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
                 </span>
               )}
             </div>
+
+            {negativeStep && (
+              <p className="max-w-full text-xs font-medium text-slate-600">
+                Going below zero on the way is fine — keep working left to right.
+              </p>
+            )}
 
             {!isCorrect && result !== null && (
               <p className="max-w-full text-sm font-semibold text-red-700 dark:text-red-300">

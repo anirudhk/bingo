@@ -1,4 +1,25 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
+
+/** useState mirrored to sessionStorage (per tab; survives reloads, not new tabs). */
+function useSessionState<T>(key: string, initial: T): [T, (v: T) => void] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const raw = sessionStorage.getItem(key);
+      return raw === null ? initial : (JSON.parse(raw) as T);
+    } catch {
+      return initial;
+    }
+  });
+  const set = (v: T) => {
+    setValue(v);
+    try {
+      sessionStorage.setItem(key, JSON.stringify(v));
+    } catch {
+      // private mode / storage full — state still works for this page view
+    }
+  };
+  return [value, set];
+}
 import {
   BrowserRouter as Router,
   Navigate,
@@ -18,18 +39,45 @@ import { ThemeApplier } from './components/UI/ThemeApplier';
 import { HomeShell } from './components/UI/HomeShell';
 import { LearningPath } from './components/UI/LearningPath';
 import { DailyPuzzlePage } from './components/UI/DailyPuzzlePage';
-import { ProfilePage } from './components/UI/ProfilePage';
-import { DailyLeaderboardPage } from './components/UI/DailyLeaderboardPage';
-import { PrivacyPage } from './components/UI/PrivacyPage';
-import { TermsPage } from './components/UI/TermsPage';
-import { MeRedirectPage } from './components/UI/MeRedirectPage';
-import { MultiplayerLobbyPage } from './components/UI/MultiplayerLobbyPage';
-import { MultiplayerSessionPage } from './components/UI/MultiplayerSessionPage';
-import { MultiplayerJoinPage } from './components/UI/MultiplayerJoinPage';
 import { PlausibleAnalytics } from './components/analytics/PlausibleAnalytics';
 import type { DifficultyLevel, GameMode } from './types/game';
 import { useGameStore } from './store/gameStore';
 import { getLevel } from './constants/levels';
+
+// Screens most visitors never open load on demand, keeping the first
+// download small (multiplayer, profiles, leaderboard, legal pages).
+const ProfilePage = lazy(() =>
+  import('./components/UI/ProfilePage').then((m) => ({ default: m.ProfilePage }))
+);
+const DailyLeaderboardPage = lazy(() =>
+  import('./components/UI/DailyLeaderboardPage').then((m) => ({ default: m.DailyLeaderboardPage }))
+);
+const PrivacyPage = lazy(() =>
+  import('./components/UI/PrivacyPage').then((m) => ({ default: m.PrivacyPage }))
+);
+const TermsPage = lazy(() =>
+  import('./components/UI/TermsPage').then((m) => ({ default: m.TermsPage }))
+);
+const MeRedirectPage = lazy(() =>
+  import('./components/UI/MeRedirectPage').then((m) => ({ default: m.MeRedirectPage }))
+);
+const MultiplayerLobbyPage = lazy(() =>
+  import('./components/UI/MultiplayerLobbyPage').then((m) => ({ default: m.MultiplayerLobbyPage }))
+);
+const MultiplayerSessionPage = lazy(() =>
+  import('./components/UI/MultiplayerSessionPage').then((m) => ({
+    default: m.MultiplayerSessionPage,
+  }))
+);
+const MultiplayerJoinPage = lazy(() =>
+  import('./components/UI/MultiplayerJoinPage').then((m) => ({ default: m.MultiplayerJoinPage }))
+);
+
+const RouteFallback: React.FC = () => (
+  <div className="flex h-full items-center justify-center text-sm text-slate-500" role="status">
+    Loading…
+  </div>
+);
 
 /** GitHub Pages uses `/bingo`; Capacitor uses `./`, which must not be used as Router basename. */
 function routerBasename(): string | undefined {
@@ -44,8 +92,16 @@ const QUICK_GAME_DIFFICULTY: DifficultyLevel = 'easy';
 function App() {
   // Wizard-style local state used by the Play tab. Learn mode passes the
   // level id through the URL (?level=...) and bypasses this entirely.
-  const [selectedGameMode, setSelectedGameMode] = useState<GameMode | null>(null);
-  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
+  // Kept in sessionStorage so a page refresh mid-game doesn't bounce the player
+  // back to the mode picker.
+  const [selectedGameMode, setSelectedGameMode] = useSessionState<GameMode | null>(
+    'gg:play:mode',
+    null
+  );
+  const [selectedDifficulty, setSelectedDifficulty] = useSessionState<DifficultyLevel | null>(
+    'gg:play:difficulty',
+    null
+  );
   const resetGame = useGameStore((s) => s.resetGame);
 
   const handleGameModeSelect = (mode: GameMode) => {
@@ -75,75 +131,77 @@ function App() {
           <UpdateToast />
           <div className="container mx-auto h-full">
             <AnimatePresence mode="wait">
-              <Routes>
-                {/* Home shell with Learn|Play tabs. "/" redirects to last-used tab inside HomeShell. */}
-                <Route element={<HomeShell />}>
-                  <Route path="/" element={<div />} />
-                  <Route
-                    path="/learn"
-                    element={
-                      <FadeIn>
-                        <LearningPath />
-                      </FadeIn>
-                    }
-                  />
-                  <Route
-                    path="/play"
-                    element={
-                      <FadeIn>
-                        <GameModeSelector
-                          onSelect={handleGameModeSelect}
-                          selectedMode={selectedGameMode || undefined}
-                        />
-                      </FadeIn>
-                    }
-                  />
-                  <Route
-                    path="/play/difficulty"
-                    element={
-                      selectedGameMode &&
-                      selectedGameMode !== 'quickGame' &&
-                      selectedGameMode !== 'multiplayer' ? (
+              <Suspense fallback={<RouteFallback />}>
+                <Routes>
+                  {/* Home shell with Learn|Play tabs. "/" redirects to last-used tab inside HomeShell. */}
+                  <Route element={<HomeShell />}>
+                    <Route path="/" element={<div />} />
+                    <Route
+                      path="/learn"
+                      element={
                         <FadeIn>
-                          <DifficultySelector
-                            onSelect={handleDifficultySelect}
-                            selectedDifficulty={selectedDifficulty || undefined}
-                            gameMode={selectedGameMode}
+                          <LearningPath />
+                        </FadeIn>
+                      }
+                    />
+                    <Route
+                      path="/play"
+                      element={
+                        <FadeIn>
+                          <GameModeSelector
+                            onSelect={handleGameModeSelect}
+                            selectedMode={selectedGameMode || undefined}
                           />
                         </FadeIn>
-                      ) : (
-                        <Navigate to="/play" replace />
-                      )
+                      }
+                    />
+                    <Route
+                      path="/play/difficulty"
+                      element={
+                        selectedGameMode &&
+                        selectedGameMode !== 'quickGame' &&
+                        selectedGameMode !== 'multiplayer' ? (
+                          <FadeIn>
+                            <DifficultySelector
+                              onSelect={handleDifficultySelect}
+                              selectedDifficulty={selectedDifficulty || undefined}
+                              gameMode={selectedGameMode}
+                            />
+                          </FadeIn>
+                        ) : (
+                          <Navigate to="/play" replace />
+                        )
+                      }
+                    />
+                  </Route>
+
+                  {/* Game route — outside the HomeShell because gameplay takes the full screen. */}
+                  <Route
+                    path="/game"
+                    element={
+                      <GameRoute
+                        selectedGameMode={selectedGameMode}
+                        selectedDifficulty={selectedDifficulty}
+                      />
                     }
                   />
-                </Route>
 
-                {/* Game route — outside the HomeShell because gameplay takes the full screen. */}
-                <Route
-                  path="/game"
-                  element={
-                    <GameRoute
-                      selectedGameMode={selectedGameMode}
-                      selectedDifficulty={selectedDifficulty}
-                    />
-                  }
-                />
+                  {/* Daily puzzle — also full-screen, manages its own loading. */}
+                  <Route path="/daily" element={<DailyPuzzlePage />} />
 
-                {/* Daily puzzle — also full-screen, manages its own loading. */}
-                <Route path="/daily" element={<DailyPuzzlePage />} />
+                  <Route path="/play/multiplayer" element={<MultiplayerLobbyPage />} />
+                  <Route path="/play/mp/:sessionId" element={<MultiplayerSessionPage />} />
+                  <Route path="/play/join/:token" element={<MultiplayerJoinPage />} />
 
-                <Route path="/play/multiplayer" element={<MultiplayerLobbyPage />} />
-                <Route path="/play/mp/:sessionId" element={<MultiplayerSessionPage />} />
-                <Route path="/play/join/:token" element={<MultiplayerJoinPage />} />
+                  <Route path="/privacy" element={<PrivacyPage />} />
+                  <Route path="/terms" element={<TermsPage />} />
+                  <Route path="/leaderboard/daily" element={<DailyLeaderboardPage />} />
+                  <Route path="/u/:handle" element={<ProfilePage />} />
+                  <Route path="/me" element={<MeRedirectPage />} />
 
-                <Route path="/privacy" element={<PrivacyPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/leaderboard/daily" element={<DailyLeaderboardPage />} />
-                <Route path="/u/:handle" element={<ProfilePage />} />
-                <Route path="/me" element={<MeRedirectPage />} />
-
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
             </AnimatePresence>
           </div>
         </div>

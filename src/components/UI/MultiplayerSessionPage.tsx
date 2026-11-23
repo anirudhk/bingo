@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthOptional } from '../../auth/authContext';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { ButtonGameBoard } from '../GameBoard/ButtonGameBoard';
 import { useGameStore } from '../../store/gameStore';
 import type { MpSessionRow } from '../../multiplayer/mpTypes';
@@ -19,7 +19,7 @@ export const MultiplayerSessionPage: React.FC = () => {
   const { sessionId } = useParams<{ sessionId: string }>();
   const auth = useAuthOptional();
   const navigate = useNavigate();
-  const sb = useMemo(() => getSupabase(), []);
+  const sb = useSupabase();
 
   const gameStatus = useGameStore((s) => s.gameStatus);
   const totalTime = useGameStore((s) => s.totalTime);

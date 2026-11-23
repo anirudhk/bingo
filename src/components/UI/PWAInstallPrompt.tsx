@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '../../utils/logger';
+import { useProgressStore } from '../../store/progressStore';
 
 // `BeforeInstallPromptEvent` isn't in lib.dom yet — declare the shape we use.
 interface BeforeInstallPromptEvent extends Event {
@@ -12,6 +13,11 @@ interface BeforeInstallPromptEvent extends Event {
 export const PWAInstallPrompt: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  // Don't ask on the first visit: wait until the player has finished
+  // something (a Learn level or a daily puzzle) and knows they like the game.
+  const hasPlayed = useProgressStore(
+    (s) => Object.values(s.levels).some((l) => l.completed) || Object.keys(s.daily).length > 0
+  );
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -44,7 +50,7 @@ export const PWAInstallPrompt: React.FC = () => {
 
   return (
     <AnimatePresence>
-      {showInstallPrompt && (
+      {showInstallPrompt && hasPlayed && (
         <motion.div
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}

@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { utcDateKey } from '../../utils/puzzleStore';
 import { logger } from '../../utils/logger';
 
@@ -14,7 +14,7 @@ interface LbRow {
 
 export const DailyLeaderboardPage: React.FC = () => {
   const [params] = useSearchParams();
-  const sb = useMemo(() => getSupabase(), []);
+  const sb = useSupabase();
   const defaultDate = useMemo(() => utcDateKey(new Date()), []);
   const date = params.get('date') || defaultDate;
 

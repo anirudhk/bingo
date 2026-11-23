@@ -89,7 +89,7 @@ export const LEVELS: LevelConfig[] = [
     tilesCount: 2,
     operatorsCount: 1,
     availableOperators: ['-'],
-    targetRange: { min: 0, max: 8 },
+    targetRange: { min: 1, max: 8 },
     totalRounds: 5,
   },
   {
@@ -137,7 +137,7 @@ export const LEVELS: LevelConfig[] = [
     tilesCount: 2,
     operatorsCount: 1,
     availableOperators: ['+', '-'],
-    targetRange: { min: 0, max: 18 },
+    targetRange: { min: 1, max: 18 },
     totalRounds: 5,
   },
 

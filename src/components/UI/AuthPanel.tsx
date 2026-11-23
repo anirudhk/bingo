@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { isSupabaseConfigured, useSupabase } from '../../lib/supabase/client';
 import { useAuthOptional } from '../../auth/authContext';
 import { logger } from '../../utils/logger';
 
@@ -60,6 +60,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onBusyChange }) => {
   const lastOAuthProvider = useRef<'google' | 'apple'>('google');
   // Accounts are general-audience (13+). Younger players keep playing as guests.
   const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const sb = useSupabase();
 
   if (!isSupabaseConfigured()) {
     return (
@@ -69,8 +70,9 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onBusyChange }) => {
     );
   }
 
-  const sb = getSupabase();
-  if (!sb) return null;
+  if (!sb) {
+    return <p className="text-xs text-slate-500 dark:text-slate-400">Loading sign-in…</p>;
+  }
 
   const redirectTo = authRedirectBase();
 

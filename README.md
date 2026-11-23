@@ -8,7 +8,7 @@ A free, open math-puzzle game in the browser. Tap numbers and operators along st
 
 ## Status
 
-`v0.1.0` — Phase 0 (production-readiness). Build + lint + tests are green; the app is installable as a PWA. See [`docs/ROADMAP.md`](./docs/ROADMAP.md) for the phased plan toward multiplayer and tournaments.
+`v0.2.0` — single-player game, Learn path, Daily Puzzle and installable PWA are live as a guest-only build. Accounts, leaderboards and multiplayer are hardened but wait on the database setup. See [`docs/LAUNCH_CHECKLIST.md`](./docs/LAUNCH_CHECKLIST.md) for what's left before launch and [`docs/ROADMAP.md`](./docs/ROADMAP.md) for the longer plan.
 
 ## Quick start
 
@@ -18,7 +18,9 @@ npm run dev              # starts Vite at http://localhost:3000
 npm run build            # type-checks + bundles to dist/
 npm run preview          # serves the production build locally
 npm run lint             # ESLint with --max-warnings 0
-npm test                 # Vitest run (49 tests across 4 files)
+npm test                 # Vitest unit tests
+npm run db:test          # Migrations + database security checks on a scratch Postgres
+npm run db:audit-live    # Probe the deployed Supabase project with the public key
 npm run test:watch       # Vitest in watch mode
 npm run test:coverage    # Coverage report (v8)
 npm run deploy           # builds + publishes to gh-pages
@@ -48,11 +50,11 @@ Deployed as an installable PWA to GitHub Pages under the `/bingo/` base path.
 
 ## How the game works
 
-1. Pick a **mode**: Quick Game (fast medium-grid session), Time Attack (60 seconds), or Classic (5 rounds).
-2. The board shows a grid of numbers (3×3 for Easy, 4×4 for Medium/Hard) with operators between every pair of adjacent tiles.
+1. Follow the **Learn** path (25 levels), play the **Daily Puzzle**, or pick a **Play** mode: Quick Game (5 quick easy rounds), Time Attack (60 seconds, a new grid every round) or Classic (5 rounds).
+2. The board shows a grid of numbers (3×3 for Easy, 4×4 for Medium/Hard, 5×5 on later Learn levels) with operators between adjacent tiles. On Hard, each target has exactly one solving path.
 3. Tap a tile, then an operator, then the next adjacent tile, alternating until you've used the right number of tiles for your difficulty.
 4. The expression is evaluated **left-to-right (no operator precedence)** — match the displayed target to score.
-5. Hint button (💡) reveals one valid solution. Clear button (✕) resets your selection.
+5. **Hint** reveals one valid solution (it costs points, and a star on Learn levels). **Clear** resets your selection.
 
 ## Project layout
 

@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthOptional } from '../../auth/authContext';
-import { getSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
+import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { logger } from '../../utils/logger';
 
 export const MultiplayerJoinPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const auth = useAuthOptional();
   const navigate = useNavigate();
-  const sb = useMemo(() => getSupabase(), []);
+  const sb = useSupabase();
   const [peek, setPeek] = useState<{ difficulty: string; host_handle: string } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
