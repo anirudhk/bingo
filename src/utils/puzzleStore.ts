@@ -10,13 +10,15 @@ import { getAllCombinationsFromConfig } from './gridGenerator';
  * re-renders so React.memo'd consumers don't thrash.
  */
 
-const BUNDLE_URL = `${import.meta.env.BASE_URL}puzzles.json`;
+// Resolved lazily: `import.meta.env` doesn't exist when Node scripts import
+// this module for the pure helpers (e.g. scripts/import-puzzles-to-db.ts).
+const bundleUrl = (): string => `${import.meta.env.BASE_URL}puzzles.json`;
 
 let cached: Promise<PuzzleBundle> | null = null;
 
 export const loadPuzzleBundle = (): Promise<PuzzleBundle> => {
   if (cached) return cached;
-  cached = fetch(BUNDLE_URL)
+  cached = fetch(bundleUrl())
     .then((res) => {
       if (!res.ok) throw new Error(`Failed to load puzzles.json: ${res.status} ${res.statusText}`);
       return res.json() as Promise<PuzzleBundle>;

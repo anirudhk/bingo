@@ -1,6 +1,8 @@
 /**
- * EPIC-28 — bulk import `public/puzzles.json` into Postgres (themes, puzzles, puzzle_themes).
- * Run after `npm run db:migrate`. Requires DATABASE_URL.
+ * EPIC-28 — bulk import `public/puzzles.json` into Postgres (themes, puzzles, puzzle_themes),
+ * then fill `daily_schedule` for the next two years using the same weekly picker the app
+ * uses offline, so the server and every device always agree on today's puzzle.
+ * Run after `npm run db:migrate` (and again at least once a year). Requires DATABASE_URL.
  *
  * Usage: `DATABASE_URL=... npm run puzzles:import-db`
  */
@@ -8,6 +10,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import postgres from 'postgres';
 import type { Puzzle, PuzzleBundle } from '../src/types/game';
+import { pickTodaysDailyPuzzle, utcDateKey } from '../src/utils/puzzleStore';
+
+const SCHEDULE_DAYS_BACK = 7;
+const SCHEDULE_DAYS_AHEAD = 730;
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
@@ -61,7 +67,8 @@ async function main(): Promise<void> {
         rating,
         rating_rd,
         rating_vol,
-        optimal_solution
+        optimal_solution,
+        available_operators
       )
       values (
         ${p.id},
@@ -71,14 +78,16 @@ async function main(): Promise<void> {
         ${p.rating},
         ${350},
         ${0.06},
-        ${sql.json(p.optimalSolution)}
+        ${sql.json(p.optimalSolution)},
+        ${p.availableOperators}
       )
       on conflict (id) do update set
         tiles = excluded.tiles,
         target = excluded.target,
         difficulty = excluded.difficulty,
         rating = excluded.rating,
-        optimal_solution = excluded.optimal_solution
+        optimal_solution = excluded.optimal_solution,
+        available_operators = excluded.available_operators
     `;
 
     for (const themeSlug of p.themes) {
@@ -95,8 +104,36 @@ async function main(): Promise<void> {
     if (n % 50 === 0) console.log('imported', n);
   }
 
-  await sql.end();
   console.log('imported', n, 'puzzles');
+
+  // Daily schedule. Past days are rewritten only if they had no entry, so an
+  // updated bundle never changes a puzzle people have already played.
+  const now = new Date();
+  let scheduled = 0;
+  for (let d = -SCHEDULE_DAYS_BACK; d <= SCHEDULE_DAYS_AHEAD; d++) {
+    const date = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + d, 12)
+    );
+    const pick = pickTodaysDailyPuzzle(puzzles, date);
+    if (!pick) continue;
+    if (d <= 0) {
+      await sql`
+        insert into public.daily_schedule (utc_date, puzzle_id)
+        values (${utcDateKey(date)}, ${pick.id})
+        on conflict (utc_date) do nothing
+      `;
+    } else {
+      await sql`
+        insert into public.daily_schedule (utc_date, puzzle_id)
+        values (${utcDateKey(date)}, ${pick.id})
+        on conflict (utc_date) do update set puzzle_id = excluded.puzzle_id
+      `;
+    }
+    scheduled += 1;
+  }
+  console.log('scheduled', scheduled, 'daily puzzles');
+
+  await sql.end();
 }
 
 main().catch((e) => {

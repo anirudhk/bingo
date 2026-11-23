@@ -4,10 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { computeStars, useProgressStore } from '../../store/progressStore';
 import { LEVELS, UNITS, getLevel, getNextLevelId } from '../../constants/levels';
-import { useAuthOptional } from '../../auth/authContext';
-import { getSupabase } from '../../lib/supabase/client';
-import { submitDailyPuzzleCloud } from '../../services/dailyLeaderboardCloud';
-import { utcDateKey } from '../../utils/puzzleStore';
+import type { DailyGuessResult } from '../../services/dailyLeaderboardCloud';
 import { feedback } from '../../utils/feedback';
 import { buildDailyShareText, shareText, type ShareOutcome } from '../../utils/share';
 import { themesUnlockedBetween, type BoardTheme } from '../../constants/boardThemes';
@@ -37,9 +34,13 @@ const StarRow: React.FC<{ stars: 0 | 1 | 2 | 3 }> = ({ stars }) => (
   </div>
 );
 
-export const ResultPage: React.FC = () => {
+interface ResultPageProps {
+  /** Daily only: the server's verdict for signed-in players (official time, streak, rating). */
+  dailyCloudResult?: DailyGuessResult | null;
+}
+
+export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
   const navigate = useNavigate();
-  const auth = useAuthOptional();
   const score = useGameStore((s) => s.score);
   const totalTime = useGameStore((s) => s.totalTime);
   const difficulty = useGameStore((s) => s.difficulty);
@@ -121,27 +122,6 @@ export const ResultPage: React.FC = () => {
       timeAttackRoundsCompleted: timeAttackRoundsCompleted ?? 0,
     });
   }, [gameMode, totalTime, timeAttackRoundsCompleted, recordPlayModeBests]);
-
-  useEffect(() => {
-    if (!isDaily || !currentPuzzleId || !auth?.user) return;
-    const sb = getSupabase();
-    if (!sb) return;
-    const dedupeKey = `gg:dailyCloud:${utcDateKey(new Date())}:${currentPuzzleId}:${auth.user.id}`;
-    try {
-      if (sessionStorage.getItem(dedupeKey)) return;
-      sessionStorage.setItem(dedupeKey, '1');
-    } catch {
-      // private mode — still attempt one submit
-    }
-    void submitDailyPuzzleCloud({
-      sb,
-      userId: auth.user.id,
-      puzzleUtcDate: utcDateKey(new Date()),
-      puzzleId: currentPuzzleId,
-      seconds: Math.round(totalTime / 1000),
-      wrongAttempts,
-    });
-  }, [isDaily, currentPuzzleId, auth?.user, totalTime, wrongAttempts]);
 
   // ──────────────────────────── Learn-mode result ───────────────────────────
   if (isLearning && level) {
@@ -246,6 +226,16 @@ export const ResultPage: React.FC = () => {
             />
             <Stat label="Difficulty" value={difficulty} />
           </div>
+          {dailyCloudResult?.correct && typeof dailyCloudResult.seconds === 'number' && (
+            <p
+              className="mt-3 rounded-xl bg-sky-50 px-3 py-2 text-xs font-semibold text-sky-800 dark:bg-sky-950/40 dark:text-sky-200"
+              role="status"
+            >
+              Leaderboard time {formatTime(dailyCloudResult.seconds * 1000)}
+              {typeof dailyCloudResult.rating === 'number' &&
+                ` · daily rating ${dailyCloudResult.rating}`}
+            </p>
+          )}
           <div className="mt-6 space-y-2">
             <motion.button
               whileHover={{ scale: 1.03 }}

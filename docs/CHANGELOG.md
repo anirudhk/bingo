@@ -12,6 +12,26 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Security — launch hardening (2026-11-23, `docs/LAUNCH_CHECKLIST.md`)
+
+- **Every database function was callable by anonymous visitors** (Postgres grants `EXECUTE` to `PUBLIC` by default), including `internal_mp_apply_elo`, which rewrites ratings. All functions are now revoked and only the app's entry points are granted back. Migration `20261123000000_launch_hardening.sql`.
+- **Ratings are server-only.** Direct writes to `user_ratings` and the client-supplied `apply_user_rating` are gone; Glicko-2 runs in the database (`internal_glicko2`, verified against the `glicko2` npm package).
+- **Daily leaderboard is server-authoritative.** `daily_schedule` fixes today's puzzle; `start_daily_attempt` starts the clock; `submit_daily_guess` checks each path, counts wrong tries and computes the time. Removed `submit_daily_leaderboard` and `bump_server_daily_streak`.
+- **Multiplayer rounds are verified and server-timed.** `mp_submit_round` takes the grid and the answer path, requires both players' grids to match (mismatch voids the match), uses the server's round start for timing and allows one submission per round. New `mp_claim_forfeit` for opponents who disappear.
+- **Profiles:** players can edit only cosmetic columns (no self-set streaks).
+
+### Changed
+
+- **No kids' accounts.** Accounts are general-audience (13+, confirmed at sign-in); children play as guests. Removed `is_kids_account`, `parent_email`, `parent_verified_at`, `set_parent_email` and the Settings section. See ADR-009.
+- **Privacy Policy and Terms** rewritten to match what the app does (still to be reviewed; contact address pending in `src/constants/legal.ts`).
+- **Error reports** go to the project's own Supabase by default (`report_client_error`, write-only `client_errors`, not linked to accounts, kept 90 days).
+- **Account deletion** now really deletes: `purge_deleted_accounts()` runs daily via pg_cron.
+- **Puzzle bundle:** +160 unique-solution hard puzzles for weekend dailies (610 total); existing puzzles unchanged. `puzzles:import-db` now also fills `daily_schedule` two years ahead with the app's own picker.
+
+### Added
+
+- `npm run db:test`: applies all migrations to a scratch Postgres and runs 53 security and behaviour checks; runs in CI. `npm run db:audit-live`: probes the deployed project with the public key.
+
 Phase-2 kickoff: the **Puzzles** pillar lands as a static, deterministic, fully-self-contained content pipeline. Daily Puzzle is playable end-to-end with its own streak. Replay has been removed from scope; EPIC-23 (IndexedDB) is still ahead before the version cuts.
 
 ### Added

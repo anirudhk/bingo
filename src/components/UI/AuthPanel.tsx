@@ -58,6 +58,8 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onBusyChange }) => {
   const [error, setError] = useState<string | null>(null);
   const lastMagicLinkAttemptMs = useRef(0);
   const lastOAuthProvider = useRef<'google' | 'apple'>('google');
+  // Accounts are general-audience (13+). Younger players keep playing as guests.
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
 
   if (!isSupabaseConfigured()) {
     return (
@@ -140,6 +142,36 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onBusyChange }) => {
         </div>
       )}
 
+      <label className="flex items-start gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+        <input
+          type="checkbox"
+          checked={ageConfirmed}
+          onChange={(e) => setAgeConfirmed(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          I&apos;m 13 or older and agree to the{' '}
+          <a
+            href={`${import.meta.env.BASE_URL}terms`}
+            className="underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Terms
+          </a>{' '}
+          and{' '}
+          <a
+            href={`${import.meta.env.BASE_URL}privacy`}
+            className="underline"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Privacy Policy
+          </a>
+          . Under 13? You can keep playing without an account — your progress stays on this device.
+        </span>
+      </label>
+
       <div>
         <label
           htmlFor="auth-email"
@@ -159,7 +191,7 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onBusyChange }) => {
           />
           <button
             type="button"
-            disabled={!email.includes('@')}
+            disabled={!ageConfirmed || !email.includes('@')}
             onClick={() => void sendMagicLink()}
             className="shrink-0 rounded-lg bg-lime-500 px-3 py-2 font-bold text-white shadow-sm hover:bg-lime-600 disabled:opacity-40"
           >
@@ -171,15 +203,17 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onBusyChange }) => {
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
+          disabled={!ageConfirmed}
           onClick={() => void oauth('google')}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800 shadow-sm hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+          className="rounded-lg border border-slate-200 bg-white px-3 py-2 font-semibold text-slate-800 shadow-sm hover:bg-slate-50 disabled:opacity-40 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
         >
           Continue with Google
         </button>
         <button
           type="button"
+          disabled={!ageConfirmed}
           onClick={() => void oauth('apple')}
-          className="rounded-lg border border-slate-200 bg-black px-3 py-2 font-semibold text-white shadow-sm hover:bg-slate-900 dark:border-slate-600"
+          className="rounded-lg border border-slate-200 bg-black px-3 py-2 font-semibold text-white shadow-sm hover:bg-slate-900 disabled:opacity-40 dark:border-slate-600"
         >
           Continue with Apple
         </button>
@@ -263,17 +297,23 @@ export const AuthPanel: React.FC<AuthPanelProps> = ({ onBusyChange }) => {
         </div>
       )}
 
-      <div className="text-[11px] leading-snug text-slate-500 dark:text-slate-400 space-y-1">
-        <p>
-          Saving progress uploads a JSON snapshot (levels, XP, daily results). In Supabase →
-          Authentication → URL configuration, add this exact URL under{' '}
-          <strong className="text-slate-600 dark:text-slate-300">Redirect URLs</strong> (and use the
-          same scheme/host as where you open the app — localhost vs production):
-        </p>
-        <code className="block break-all rounded-md bg-slate-100 px-2 py-1.5 text-[10px] text-slate-800 dark:bg-slate-800 dark:text-slate-200">
-          {redirectTo}
-        </code>
-      </div>
+      <p className="text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+        Signing in saves your progress (levels, XP, daily results) to your account so it follows you
+        to other devices.
+      </p>
+
+      {/* Setup hint for whoever runs the project — never shown to players. */}
+      {import.meta.env.DEV && (
+        <div className="space-y-1 text-[11px] leading-snug text-slate-500 dark:text-slate-400">
+          <p>
+            Dev: in Supabase → Authentication → URL configuration, add this exact URL under{' '}
+            <strong className="text-slate-600 dark:text-slate-300">Redirect URLs</strong>:
+          </p>
+          <code className="block break-all rounded-md bg-slate-100 px-2 py-1.5 text-[10px] text-slate-800 dark:bg-slate-800 dark:text-slate-200">
+            {redirectTo}
+          </code>
+        </div>
+      )}
     </div>
   );
 };

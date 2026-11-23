@@ -36,6 +36,9 @@ interface ButtonGameBoardProps {
   multiplayerRoundKey?: string;
   /** Block taps while submitting a synced round to the server. */
   lockInteraction?: boolean;
+  /** Called after every completed path (right or wrong) — lets the daily and
+   *  multiplayer screens send the move to the server for verification. */
+  onAttempt?: (attempt: { tileIds: number[]; operators: string[]; correct: boolean }) => void;
 }
 
 export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
@@ -46,6 +49,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   multiplayerSeed,
   multiplayerRoundKey,
   lockInteraction = false,
+  onAttempt,
 }) => {
   const navigate = useNavigate();
   const grid = useGameStore((s) => s.grid);
@@ -641,6 +645,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     if (inputLocked) return;
     const target = currentTarget;
     const isCorrect = submitSolution(tiles, operators);
+    onAttempt?.({ tileIds: tiles.map((t) => t.id), operators: [...operators], correct: isCorrect });
 
     const calculation = formatCalculationGrouped(tiles, operators, { asciiOperators: true });
     const result = calculatePathResult(tiles, operators);

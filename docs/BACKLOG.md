@@ -279,7 +279,7 @@ The active to-do list. Tick checkboxes as work is completed; link the PR or comm
 
 ## EPIC-29 — Glicko-2 rating — `[x]`
 
-- [x] EPIC-29.01 `P1` `M` `glicko2` npm + `src/utils/glicko2.ts` + daily submit path updates ratings via `apply_user_rating` RPC.
+- [x] EPIC-29.01 `P1` `M` `glicko2` npm + `src/utils/glicko2.ts` + daily submit path updates ratings via `apply_user_rating` RPC. _(2026-11-23: rating maths moved into the database; the client path was insecure — see LAUNCH_CHECKLIST §2.)_
 - [x] EPIC-29.02 `P1` `M` Per-mode row in `user_ratings` (`mode` text); Daily wired; Storm/Streak/Practice submit when those modes exist (Phase 2 epics).
 - [x] EPIC-29.03 `P1` `S` `ratingDeviationMatchWindow` in `src/utils/ratingMatchmaking.ts` for future brackets / puzzle fetch.
 - [x] EPIC-29.04 `P1` `S` Daily rating sparkline on `/u/:handle`.
@@ -291,14 +291,14 @@ The active to-do list. Tick checkboxes as work is completed; link the PR or comm
 
 ## EPIC-31 — Daily Puzzle leaderboard — `[x]`
 
-- [x] EPIC-31.01 `P1` `M` `/leaderboard/daily?date=` ranked by time then misses.
-- [x] EPIC-31.02 `P1` `S` `bump_server_daily_streak` RPC + `profiles.server_daily_streak_*`.
+- [x] EPIC-31.01 `P1` `M` `/leaderboard/daily?date=` ranked by time then misses. _(2026-11-23: leaderboard rows now written only by `submit_daily_guess`, server-timed.)_
+- [x] EPIC-31.02 `P1` `S` `bump_server_daily_streak` RPC + `profiles.server_daily_streak_*`. _(2026-11-23: `bump_server_daily_streak` removed; the streak updates inside `submit_daily_guess`.)_
 
 ## EPIC-32 — Privacy & compliance — `[x]`
 
-- [x] EPIC-32.01 `P1` `M` `request_account_deletion` RPC (soft hide + 30-day schedule fields).
+- [x] EPIC-32.01 `P1` `M` `request_account_deletion` RPC (soft hide + 30-day schedule fields). _(2026-11-23: hard delete now runs via `purge_deleted_accounts()`.)_
 - [x] EPIC-32.02 `P1` `S` `export_my_data` RPC + Settings download.
-- [x] EPIC-32.03 `P1` `M` Kids path: `is_kids_account`, `parent_email`, `set_parent_email` RPC; RLS hides kids from public; verification email is operator-owned (send via Supabase hook / Edge).
+- [-] EPIC-32.03 `P1` `M` Kids path: `is_kids_account`, `parent_email`, `set_parent_email` RPC; RLS hides kids from public; verification email is operator-owned (send via Supabase hook / Edge). _(Cancelled 2026-11-23: kids' accounts removed, ADR-009.)_
 - [x] EPIC-32.04 `P1` `XS` `/privacy` + `/terms` stub pages (replace with counsel-reviewed copy before launch).
 
 ## EPIC-33 — Analytics — `[x]`
@@ -327,7 +327,7 @@ The active to-do list. Tick checkboxes as work is completed; link the PR or comm
 ## EPIC-36 — Game session lifecycle — `[x]` / partial
 
 - [x] EPIC-36.01 `P1` `M` States: pending → active → finished → archived.
-- [ ] EPIC-36.02 `P1` `S` Disconnection handling (forfeit on timeout). _(Heartbeat only; server-side auto-forfeit not implemented.)_
+- [x] EPIC-36.02 `P1` `S` Disconnection handling (forfeit on timeout). _(Heartbeat only; server-side auto-forfeit not implemented.)_ _(2026-11-23: `mp_claim_forfeit` after 45 s of silence.)_
 - [x] EPIC-36.03 `P1` `S` Rematch flow (one-click; preserves rating bracket).
 
 ## EPIC-37 — Challenge a friend — `[x]`
@@ -354,7 +354,7 @@ The active to-do list. Tick checkboxes as work is completed; link the PR or comm
 
 ## EPIC-41 — Anti-cheat — `[x]` / partial
 
-- [x] EPIC-41.01 `P2` `M` Heuristic flags: solve-time impossibly low for difficulty; identical input timing across games. _(Fast-solve flag + timing hash payload.)_
+- [x] EPIC-41.01 `P2` `M` Heuristic flags: solve-time impossibly low for difficulty; identical input timing across games. _(Fast-solve flag + timing hash payload.)_ _(2026-11-23: rounds are now verified and server-timed; see `mp_submit_round`.)_
 - [ ] EPIC-41.02 `P2` `M` Moderator queue; shadow-ban + appeal flow. _(Queue + flags table; moderator UI / appeals not built.)_
 
 ---

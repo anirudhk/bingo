@@ -30,6 +30,9 @@ export const MultiplayerSessionPage: React.FC = () => {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const submitKeyRef = useRef<string | null>(null);
+  // The path that solved the current round; the server re-checks it.
+  const solvedPathRef = useRef<{ tileIds: number[]; operators: string[] } | null>(null);
+  const [claiming, setClaiming] = useState(false);
   const [clockOffsetMs, setClockOffsetMs] = useState(0);
   const [nowTick, setNowTick] = useState(() => Date.now());
 
@@ -94,6 +97,13 @@ export const MultiplayerSessionPage: React.FC = () => {
     if (gameStatus === 'playing') submitKeyRef.current = null;
   }, [gameStatus]);
 
+  const handleAttempt = useCallback(
+    (attempt: { tileIds: number[]; operators: string[]; correct: boolean }) => {
+      if (attempt.correct) solvedPathRef.current = attempt;
+    },
+    []
+  );
+
   useEffect(() => {
     if (!auth?.user || !sb || !session || session.state !== 'active') return;
     if (gameStatus !== 'paused') return;
@@ -105,6 +115,12 @@ export const MultiplayerSessionPage: React.FC = () => {
 
     void (async () => {
       try {
+        const path = solvedPathRef.current;
+        if (!path) return;
+        // Send the board we were shown plus our answer; the server checks the
+        // answer, requires both players' boards to match and times the round.
+        const { grid, currentTarget } = useGameStore.getState();
+        const gridValues = [...grid].sort((a, b) => a.id - b.id).map((t) => t.value);
         const hash = await timingFingerprint([
           session.id,
           String(session.current_round),
@@ -114,10 +130,14 @@ export const MultiplayerSessionPage: React.FC = () => {
         const { error } = await sb.rpc('mp_submit_round', {
           p_session: session.id,
           p_round: session.current_round,
-          p_solve_ms: Math.max(0, Math.round(totalTime)),
+          p_grid: gridValues,
+          p_target: currentTarget,
+          p_tile_ids: path.tileIds,
+          p_operators: path.operators,
           p_wrong: wrongAttempts,
           p_timing_hash: hash,
         });
+        solvedPathRef.current = null;
         if (error) logger.warn('mp_submit_round', error.message);
       } catch (e) {
         logger.warn('mp_submit_round threw', String(e));
@@ -241,6 +261,8 @@ export const MultiplayerSessionPage: React.FC = () => {
     session.state === 'active' &&
     oppLastSeen &&
     nowTick + clockOffsetMs - new Date(oppLastSeen).getTime() > 18_000;
+  // Matches the server's forfeit grace period (mp_claim_forfeit).
+  const oppGone = oppStale && nowTick + clockOffsetMs - new Date(oppLastSeen).getTime() > 46_000;
 
   return (
     <div className="flex h-full min-h-0 flex-col safe-pad">
@@ -272,9 +294,29 @@ export const MultiplayerSessionPage: React.FC = () => {
           </p>
         )}
         {oppStale && (
-          <p className="mx-auto mt-1 max-w-3xl text-[11px] text-slate-500">
-            Opponent connection looks stale — they may reconnect to the same match.
-          </p>
+          <div className="mx-auto mt-1 flex max-w-3xl items-center justify-between gap-2 text-[11px] text-slate-500">
+            <span>Opponent connection looks stale — they may reconnect to the same match.</span>
+            {oppGone && (
+              <button
+                type="button"
+                disabled={claiming}
+                onClick={async () => {
+                  if (!sb) return;
+                  setClaiming(true);
+                  const { data, error } = await sb.rpc('mp_claim_forfeit', {
+                    p_session: session.id,
+                  });
+                  setClaiming(false);
+                  if (error) setErr(error.message);
+                  else if (!data) setErr('Your opponent is still connected.');
+                  else void loadSession();
+                }}
+                className="shrink-0 rounded-lg bg-lime-500 px-2 py-1 font-bold text-white disabled:opacity-60"
+              >
+                Claim win
+              </button>
+            )}
+          </div>
         )}
         {err && <p className="mx-auto mt-1 max-w-3xl text-[11px] text-red-600">{err}</p>}
       </header>
@@ -339,6 +381,7 @@ export const MultiplayerSessionPage: React.FC = () => {
             multiplayerSeed={session.round_seed}
             multiplayerRoundKey={`${session.current_round}|${session.round_seed}`}
             lockInteraction={gameStatus === 'paused'}
+            onAttempt={handleAttempt}
           />
         </div>
       )}

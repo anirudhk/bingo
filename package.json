@@ -23,6 +23,8 @@
     "puzzles:validate": "tsx scripts/validate-puzzles.ts",
     "puzzles:import-db": "tsx scripts/import-puzzles-to-db.ts",
     "db:migrate": "tsx scripts/db-migrate.ts",
+    "db:test": "bash scripts/db-test.sh",
+    "db:audit-live": "tsx scripts/audit-live.ts",
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:push": "drizzle-kit push",
     "prepare": "husky"

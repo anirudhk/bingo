@@ -12,7 +12,6 @@ interface ProfileRow {
   avatar_url: string | null;
   country_code: string | null;
   is_public: boolean;
-  is_kids_account: boolean;
 }
 
 interface RatingRow {
@@ -54,7 +53,7 @@ export const ProfilePage: React.FC = () => {
       try {
         const { data: p, error: pe } = await sb
           .from('profiles')
-          .select('id,handle,display_name,avatar_url,country_code,is_public,is_kids_account')
+          .select('id,handle,display_name,avatar_url,country_code,is_public')
           .eq('handle', handle)
           .maybeSingle();
 
@@ -205,13 +204,10 @@ export const ProfilePage: React.FC = () => {
                 <input
                   type="checkbox"
                   checked={profile.is_public}
-                  disabled={pubSaving || profile.is_kids_account}
+                  disabled={pubSaving}
                   onChange={(e) => void togglePublic(e.target.checked)}
                 />
                 Public profile
-                {profile.is_kids_account && (
-                  <span className="text-xs text-slate-500">(Kids accounts stay private.)</span>
-                )}
               </label>
             </div>
           )}

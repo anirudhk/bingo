@@ -1,77 +1,89 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { dailyOutcome, updateAfterMatch } from '../utils/glicko2';
 import { logger } from '../utils/logger';
 
-const DEFAULT_OPP = { rating: 1500, rd: 350, vol: 0.06 };
+/**
+ * Server-authoritative daily puzzle (migration 20261123000000_launch_hardening).
+ *
+ * The server decides which puzzle is today's, records when the player
+ * started, checks every guess, counts wrong tries and computes the solve time
+ * itself. The app never sends a time, a score or a rating — it only sends the
+ * path the player tapped. Leaderboard, streak and rating are written by the
+ * server when the correct answer arrives.
+ */
 
-export async function submitDailyPuzzleCloud(args: {
-  sb: SupabaseClient;
-  userId: string;
-  puzzleUtcDate: string;
+export interface DailyAttempt {
   puzzleId: string;
-  seconds: number;
+  startedAt: string;
+  solved: boolean;
   wrongAttempts: number;
-}): Promise<void> {
-  const { sb, puzzleUtcDate, puzzleId, seconds, wrongAttempts } = args;
+}
 
+export interface DailyGuessResult {
+  correct: boolean;
+  alreadySolved?: boolean;
+  seconds?: number;
+  wrongAttempts: number;
+  streak?: number;
+  rating?: number;
+}
+
+/** Start (or resume) today's attempt. Returns null when offline / not set up. */
+export async function startDailyAttempt(sb: SupabaseClient): Promise<DailyAttempt | null> {
   try {
-    const { error: lbErr } = await sb.rpc('submit_daily_leaderboard', {
-      p_puzzle_utc_date: puzzleUtcDate,
-      p_puzzle_id: puzzleId,
-      p_seconds: seconds,
-      p_wrong_attempts: wrongAttempts,
-    });
-    if (lbErr) {
-      logger.warn('submit_daily_leaderboard rpc failed', lbErr.message);
-      return;
+    const { data, error } = await sb.rpc('start_daily_attempt');
+    if (error) {
+      logger.warn('start_daily_attempt failed', error.message);
+      return null;
     }
-
-    const { data: streakN, error: stErr } = await sb.rpc('bump_server_daily_streak', {
-      p_utc_date: puzzleUtcDate,
-    });
-    if (stErr) logger.warn('bump_server_daily_streak failed', stErr.message);
-    void streakN;
-
-    let opp = { ...DEFAULT_OPP };
-    const { data: puzzleRow } = await sb
-      .from('puzzles')
-      .select('rating,rating_rd,rating_vol')
-      .eq('id', puzzleId)
-      .maybeSingle();
-    if (puzzleRow) {
-      opp = {
-        rating: Number(puzzleRow.rating),
-        rd: Number(puzzleRow.rating_rd),
-        vol: Number(puzzleRow.rating_vol),
-      };
-    }
-
-    const { data: ratingRow } = await sb
-      .from('user_ratings')
-      .select('rating,rd,vol')
-      .eq('user_id', args.userId)
-      .eq('mode', 'daily')
-      .maybeSingle();
-
-    const playerBase = ratingRow
-      ? {
-          rating: Number(ratingRow.rating),
-          rd: Number(ratingRow.rd),
-          vol: Number(ratingRow.vol),
-        }
-      : DEFAULT_OPP;
-
-    const outcome = dailyOutcome(wrongAttempts);
-    const next = updateAfterMatch(playerBase, opp, outcome);
-
-    const { error: rateErr } = await sb.rpc('apply_user_rating', {
-      p_mode: 'daily',
-      p_rating: next.rating,
-      p_rd: next.rd,
-      p_vol: next.vol,
-    });
-    if (rateErr) logger.warn('apply_user_rating failed', rateErr.message);
+    const row = (Array.isArray(data) ? data[0] : data) as
+      | { puzzle_id: string; started_at: string; solved: boolean; wrong_attempts: number }
+      | undefined;
+    if (!row) return null;
+    return {
+      puzzleId: row.puzzle_id,
+      startedAt: row.started_at,
+      solved: row.solved,
+      wrongAttempts: row.wrong_attempts,
+    };
   } catch (e) {
-    logger.warn('submitDailyPuzzleCloud threw', String(e));
+    logger.warn('start_daily_attempt threw', String(e));
+    return null;
+  }
+}
+
+/** Send one guess for the server to check. */
+export async function submitDailyGuess(
+  sb: SupabaseClient,
+  tileIds: number[],
+  operators: string[]
+): Promise<DailyGuessResult | null> {
+  try {
+    const { data, error } = await sb.rpc('submit_daily_guess', {
+      p_tile_ids: tileIds,
+      p_operators: operators,
+    });
+    if (error) {
+      logger.warn('submit_daily_guess failed', error.message);
+      return null;
+    }
+    const r = data as {
+      correct: boolean;
+      already_solved?: boolean;
+      seconds?: number;
+      wrong_attempts: number;
+      streak?: number;
+      rating?: number;
+    };
+    return {
+      correct: r.correct,
+      alreadySolved: r.already_solved,
+      seconds: r.seconds,
+      wrongAttempts: r.wrong_attempts,
+      streak: r.streak,
+      rating: r.rating,
+    };
+  } catch (e) {
+    logger.warn('submit_daily_guess threw', String(e));
+    return null;
   }
 }

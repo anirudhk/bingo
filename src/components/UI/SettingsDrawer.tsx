@@ -38,7 +38,6 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open, onClose, o
   const auth = useAuthOptional();
   const sb = getSupabase();
   const closeBtnRef = useRef<HTMLButtonElement>(null);
-  const [parentEmail, setParentEmail] = useState('');
   const [accountMsg, setAccountMsg] = useState<string | null>(null);
 
   useEffect(() => {
@@ -269,39 +268,6 @@ export const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ open, onClose, o
                     >
                       Delete account (30-day window)
                     </button>
-                    <div>
-                      <p className="mb-1 font-semibold text-gray-700 dark:text-gray-200">
-                        Kids / COPPA
-                      </p>
-                      <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                        Store a parent email; verification should be completed server-side before
-                        enabling cloud saves for minors.
-                      </p>
-                      <div className="mt-1 flex gap-1">
-                        <input
-                          type="email"
-                          placeholder="parent@example.com"
-                          value={parentEmail}
-                          onChange={(e) => setParentEmail(e.target.value)}
-                          className="min-w-0 flex-1 rounded border border-gray-200 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-800"
-                        />
-                        <button
-                          type="button"
-                          className="shrink-0 rounded bg-gray-100 px-2 py-1 text-xs font-bold dark:bg-gray-800"
-                          onClick={async () => {
-                            setAccountMsg(null);
-                            const { error } = await sb.rpc('set_parent_email', {
-                              p_email: parentEmail.trim(),
-                            });
-                            setAccountMsg(
-                              error ? error.message : 'Parent email saved for verification.'
-                            );
-                          }}
-                        >
-                          Save
-                        </button>
-                      </div>
-                    </div>
                     {accountMsg && (
                       <p className="text-[11px] text-lime-700 dark:text-lime-300">{accountMsg}</p>
                     )}

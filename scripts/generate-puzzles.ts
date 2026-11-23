@@ -16,9 +16,18 @@ import { fileURLToPath } from 'node:url';
 import type { DifficultyLevel, Puzzle, PuzzleBundle } from '../src/types/game';
 import { PUZZLE_THEMES } from '../src/constants/puzzleThemes';
 import { buildPuzzle } from '../src/utils/puzzleBuilder';
+import { countPuzzleSolutions } from '../src/utils/puzzleStore';
 
 const BUNDLE_REV = 1;
 const DIFFICULTIES: DifficultyLevel[] = ['easy', 'medium', 'hard'];
+
+/**
+ * Weekend dailies (Fri–Sun) use hard puzzles with exactly one solution. The
+ * theme buckets yield only ~13% of those, so generate a dedicated batch:
+ * 160 puzzles ≈ a year of weekends before any repeat. Ids are separate from
+ * the theme buckets, so adding this batch never changes an existing puzzle.
+ */
+const DAILY_HARD_COUNT = 160;
 
 const argPer = (() => {
   const i = process.argv.indexOf('--per');
@@ -75,6 +84,33 @@ const main = (): void => {
         );
       }
     }
+  }
+
+  // ── Unique-solution hard puzzles for weekend dailies ──
+  const dailyTheme = PUZZLE_THEMES.find((t) => t.id === 'mixed-all');
+  if (!dailyTheme) throw new Error('mixed-all theme missing');
+  let dailyAccepted = 0;
+  for (
+    let attempt = 0;
+    dailyAccepted < DAILY_HARD_COUNT && attempt < DAILY_HARD_COUNT * 40;
+    attempt++
+  ) {
+    const puzzle = buildPuzzle({
+      seed: `r${BUNDLE_REV}|daily-hard|${attempt}`,
+      config: dailyTheme.variants.hard,
+      difficulty: 'hard',
+      themes: [dailyTheme.id],
+      id: `p-daily-hard-${String(dailyAccepted).padStart(4, '0')}`,
+    });
+    if (!puzzle || countPuzzleSolutions(puzzle) !== 1) continue;
+    const sig = `${puzzle.tiles.map((t) => t.value).join(',')}|${puzzle.target}`;
+    if (seen.has(sig)) continue;
+    seen.add(sig);
+    all.push(puzzle);
+    dailyAccepted++;
+  }
+  if (dailyAccepted < DAILY_HARD_COUNT) {
+    console.warn(`[puzzles] daily-hard: only ${dailyAccepted}/${DAILY_HARD_COUNT}`);
   }
 
   const bundle: PuzzleBundle = {

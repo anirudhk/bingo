@@ -200,6 +200,18 @@ All consumers use selector form: `useGameStore(s => s.score)`.
 2. Copy this template:
 
 ```
+## ADR-009 — Accounts are general-audience (13+); no kids' accounts
+
+**Status:** Accepted (2026-11-23).
+
+**Context.** Kids' accounts needed verified parental consent (COPPA, UK Children's Code, GDPR-K): a consent flow, verification emails and a parent dashboard. None of it was built; `set_parent_email` only stored an address.
+
+**Decision.** Remove kids' accounts. Sign-in requires confirming the player is 13 or older. Children play as guests, and their progress stays on their device. If we learn an account belongs to a child under 13, it is deleted.
+
+**Consequences.** Kids can't use leaderboards, cloud sync or online matches. The Learn path, daily puzzle (including sharing) and all single-player modes work fully without an account. Revisit if a school or parent product (EPIC-52) needs child accounts; that requires the full consent flow.
+
+---
+
 ## ADR-NNN — <short title>
 
 **Status:** Proposed | Accepted | Deprecated | Superseded by ADR-XXX

@@ -45,5 +45,43 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: Validate puzzle bundle
+        run: npm run puzzles:validate
+
       - name: Build
         run: npm run build
+
+  db:
+    name: database security + flows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Migrations + security/flow checks
+        env:
+          DB_TEST_URL: postgres://postgres:postgres@localhost:5432/postgres
+        run: npm run db:test
