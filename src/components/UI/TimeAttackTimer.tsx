@@ -9,7 +9,7 @@ export const TimeAttackTimer: React.FC = () => {
 
   const seconds = Math.ceil(timeAttackTimeLeft / 1000);
   const isLowTime = seconds <= 10;
-  
+
   return (
     <motion.div
       className={`text-center ${isLowTime ? 'animate-pulse' : ''}`}
@@ -19,9 +19,7 @@ export const TimeAttackTimer: React.FC = () => {
       <div className={`text-2xl font-bold ${isLowTime ? 'text-red-500' : 'text-blue-600'}`}>
         {seconds}s
       </div>
-      <div className="text-sm text-gray-600">
-        Rounds: {timeAttackRoundsCompleted || 0}
-      </div>
+      <div className="text-sm text-gray-600">Rounds: {timeAttackRoundsCompleted || 0}</div>
     </motion.div>
   );
 };

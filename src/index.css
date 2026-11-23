@@ -2,21 +2,45 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile viewport hardening (EPIC-14):
+   - 100dvh keeps the layout stable when iOS Safari's URL bar collapses; the
+     100vh fallback handles UAs without dvh support (mostly old Android WebView).
+   - env(safe-area-inset-*) padding lives on a wrapper so notch/home-indicator
+     never clip game content. */
+html,
+body,
+#root {
+  height: 100vh;
+  height: 100dvh;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell',
+    'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Add it as a utility class so screen-shells can opt in without touching every
+   route. Routes that need to *push* content past the safe area (e.g. game
+   board) apply this; routes that prefer the system-managed inset (e.g. modal
+   overlays) don't. */
+.safe-pad {
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
 }
 
-/* Prevent text selection during swipes */
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Game UI is tap/keyboard driven; suppressing text selection avoids accidental
+   highlights when rapidly tapping tiles. Override with `.allow-select` for
+   anywhere users might legitimately want to select text (help screens, etc.). */
 * {
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -24,10 +48,24 @@ code {
   user-select: none;
 }
 
-/* Allow text selection in specific areas */
 .allow-select {
   -webkit-user-select: text;
   -moz-user-select: text;
   -ms-user-select: text;
   user-select: text;
-} 
+}
+
+/* prefers-reduced-motion: short-circuit transitions/animations everywhere
+   except where motion is essential. Framer Motion components are handled
+   separately via <MotionConfig reducedMotion="user">; this rule covers CSS
+   transitions and Tailwind's `animate-pulse` (used by the hint state). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

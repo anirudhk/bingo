@@ -8,6 +8,15 @@ yarn-error.log*
 dist/
 build/
 
+# Capacitor native (local machine / CI artifacts)
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/captures/
+ios/App/build/
+ios/DerivedData/
+
 # Environment variables
 .env
 .env.local

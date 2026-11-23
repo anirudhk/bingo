@@ -1,38 +1,87 @@
 {
-    "name": "grid-genius",
-    "private": true,
-    "version": "0.0.0",
-    "homepage": "https://anirudhk.github.io/bingo",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "tsc && vite build",
-        "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-        "preview": "vite preview",
-        "deploy": "npm run build && gh-pages -d dist"
-    },
-    "dependencies": {
-        "framer-motion": "^10.16.4",
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "react-router-dom": "^6.18.0",
-        "zustand": "^4.4.4"
-    },
-    "devDependencies": {
-        "@types/react": "^18.2.15",
-        "@types/react-dom": "^18.2.7",
-        "@typescript-eslint/eslint-plugin": "^6.0.0",
-        "@typescript-eslint/parser": "^6.0.0",
-        "@vitejs/plugin-react": "^4.0.3",
-        "autoprefixer": "^10.4.16",
-        "eslint": "^8.45.0",
-        "eslint-plugin-react-hooks": "^4.6.0",
-        "eslint-plugin-react-refresh": "^0.4.3",
-        "gh-pages": "^6.3.0",
-        "postcss": "^8.4.31",
-        "tailwindcss": "^3.3.5",
-        "typescript": "^5.0.2",
-        "vite": "^4.4.5",
-        "vite-plugin-pwa": "^0.17.0"
-    }
+  "name": "grid-genius",
+  "private": true,
+  "version": "0.2.0",
+  "homepage": "https://anirudhk.github.io/bingo",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\" \"docs/**/*.md\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\" \"docs/**/*.md\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "preview": "vite preview",
+    "deploy": "npm run build && gh-pages -d dist",
+    "build:mobile": "CAPACITOR_BUILD=1 vite build && cap sync",
+    "cap:sync": "CAPACITOR_BUILD=1 vite build && cap sync",
+    "cap:android": "cap open android",
+    "cap:ios": "cap open ios",
+    "puzzles:generate": "tsx scripts/generate-puzzles.ts",
+    "puzzles:validate": "tsx scripts/validate-puzzles.ts",
+    "puzzles:import-db": "tsx scripts/import-puzzles-to-db.ts",
+    "db:migrate": "tsx scripts/db-migrate.ts",
+    "drizzle:generate": "drizzle-kit generate",
+    "drizzle:push": "drizzle-kit push",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "!(vite.config).{ts,tsx}": [
+      "eslint --fix --max-warnings 0",
+      "prettier --write"
+    ],
+    "vite.config.ts": [
+      "prettier --write"
+    ],
+    "*.{json,css,md}": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/ios": "^6.2.0",
+    "@supabase/supabase-js": "^2.105.4",
+    "drizzle-orm": "^0.45.2",
+    "framer-motion": "^10.16.4",
+    "glicko2": "^1.2.1",
+    "react": "^18.2.0",
+    "react-confetti": "^6.4.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.18.0",
+    "zustand": "^4.4.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "@vitejs/plugin-react": "^4.0.3",
+    "@vitest/coverage-v8": "^4.1.5",
+    "autoprefixer": "^10.4.16",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.3",
+    "gh-pages": "^6.3.0",
+    "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
+    "lint-staged": "^15.5.2",
+    "postcss": "^8.4.31",
+    "postgres": "^3.4.9",
+    "prettier": "^3.8.3",
+    "tailwindcss": "^3.3.5",
+    "tsx": "^4.21.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vite-plugin-pwa": "^0.17.0",
+    "vitest": "^4.1.5"
+  }
 }

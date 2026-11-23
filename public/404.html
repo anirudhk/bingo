@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Grid Genius</title>
+    <script>
+      // Single-Page-Apps for GitHub Pages — MIT-licensed snippet by Rafael Pedicini
+      // https://github.com/rafgraph/spa-github-pages
+      // Rewrites the request path so index.html can restore it via History API.
+      // Keep `pathSegmentsToKeep` in sync with the project base in vite.config.ts.
+      var pathSegmentsToKeep = 1; // we deploy under /bingo/
+      var l = window.location;
+      l.replace(
+        l.protocol +
+          '//' +
+          l.hostname +
+          (l.port ? ':' + l.port : '') +
+          l.pathname
+            .split('/')
+            .slice(0, 1 + pathSegmentsToKeep)
+            .join('/') +
+          '/?/' +
+          l.pathname
+            .slice(1)
+            .split('/')
+            .slice(pathSegmentsToKeep)
+            .join('/')
+            .replace(/&/g, '~and~') +
+          (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+          l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>
