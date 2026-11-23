@@ -1,17 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { logger } from '../../utils/logger';
+
+// `BeforeInstallPromptEvent` isn't in lib.dom yet — declare the shape we use.
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: readonly string[];
+  readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  prompt(): Promise<void>;
+}
 
 export const PWAInstallPrompt: React.FC = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
 
   useEffect(() => {
     const handler = (e: Event) => {
-      // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
-      // Stash the event so it can be triggered later
-      setDeferredPrompt(e);
-      // Show the install prompt
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setShowInstallPrompt(true);
     };
 
@@ -25,19 +30,10 @@ export const PWAInstallPrompt: React.FC = () => {
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
 
-    // Show the install prompt
-    deferredPrompt.prompt();
-
-    // Wait for the user to respond to the prompt
+    await deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
+    logger.debug('PWA install prompt outcome:', outcome);
 
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    } else {
-      console.log('User dismissed the install prompt');
-    }
-
-    // Clear the deferredPrompt
     setDeferredPrompt(null);
     setShowInstallPrompt(false);
   };
@@ -60,10 +56,10 @@ export const PWAInstallPrompt: React.FC = () => {
               <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                 <span className="text-white text-lg">🧮</span>
               </div>
-                              <div>
-                  <h3 className="font-semibold text-gray-900">Install Grid Genius</h3>
-                  <p className="text-sm text-gray-600">Add to home screen for the best experience</p>
-                </div>
+              <div>
+                <h3 className="font-semibold text-gray-900">Install Grid Genius</h3>
+                <p className="text-sm text-gray-600">Add to home screen for the best experience</p>
+              </div>
             </div>
             <div className="flex space-x-2">
               <button
@@ -84,4 +80,4 @@ export const PWAInstallPrompt: React.FC = () => {
       )}
     </AnimatePresence>
   );
-}; 
+};

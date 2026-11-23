@@ -1,9 +1,16 @@
-import { Tile } from '../types/game';
+import type { Tile } from '../types/game';
+import { logger } from './logger';
 
-export const calculateResult = (num1: number, op1: string, num2: number, op2: string, num3: number): number => {
+export const calculateResult = (
+  num1: number,
+  op1: string,
+  num2: number,
+  op2: string,
+  num3: number
+): number => {
   // Calculate left to right (no operator precedence for simplicity)
   let result = num1;
-  
+
   // Apply first operation
   switch (op1) {
     case '+':
@@ -18,7 +25,7 @@ export const calculateResult = (num1: number, op1: string, num2: number, op2: st
     default:
       throw new Error(`Invalid operator: ${op1}`);
   }
-  
+
   // Apply second operation
   switch (op2) {
     case '+':
@@ -33,7 +40,7 @@ export const calculateResult = (num1: number, op1: string, num2: number, op2: st
     default:
       throw new Error(`Invalid operator: ${op2}`);
   }
-  
+
   return result;
 };
 
@@ -46,9 +53,7 @@ export const calculatePathResult = (tiles: Tile[], operators: string[]): number 
     // Easy mode: 2 tiles, 1 operator
     const [tile1, tile2] = tiles;
     const [op1] = operators;
-    
 
-    
     switch (op1) {
       case '+':
         return tile1.value + tile2.value;
@@ -57,7 +62,7 @@ export const calculatePathResult = (tiles: Tile[], operators: string[]): number 
       case '*':
         return tile1.value * tile2.value;
       default:
-        console.log('Invalid operator:', op1);
+        logger.warn('Invalid operator:', op1);
         return null;
     }
   }
@@ -66,13 +71,13 @@ export const calculatePathResult = (tiles: Tile[], operators: string[]): number 
     // Medium/Hard mode: 3 tiles, 2 operators
     const [tile1, tile2, tile3] = tiles;
     const [op1, op2] = operators;
-    
-    console.log('Medium/Hard mode calculation:', tile1.value, op1, tile2.value, op2, tile3.value);
-    
+
+    logger.debug('Medium/Hard mode calculation:', tile1.value, op1, tile2.value, op2, tile3.value);
+
     return calculateResult(tile1.value, op1, tile2.value, op2, tile3.value);
   }
 
-  console.log('No matching calculation pattern');
+  logger.warn('No matching calculation pattern');
   return null;
 };
 
@@ -96,8 +101,8 @@ export const isValidPath = (tiles: Tile[]): boolean => {
 
   // Check if path is straight (all horizontal or all vertical)
   if (tiles.length > 2) {
-    const isHorizontal = tiles.every(tile => tile.position.row === tiles[0].position.row);
-    const isVertical = tiles.every(tile => tile.position.col === tiles[0].position.col);
+    const isHorizontal = tiles.every((tile) => tile.position.row === tiles[0].position.row);
+    const isVertical = tiles.every((tile) => tile.position.col === tiles[0].position.col);
 
     if (!isHorizontal && !isVertical) {
       return false;
@@ -126,57 +131,89 @@ export const isValidPath = (tiles: Tile[]): boolean => {
 
 export const getTilesBetween = (startTile: Tile, endTile: Tile, grid: Tile[]): Tile[] => {
   const path: Tile[] = [startTile];
-  
+
   const rowDiff = endTile.position.row - startTile.position.row;
   const colDiff = endTile.position.col - startTile.position.col;
-  
+
   // Only handle straight lines
   if (rowDiff !== 0 && colDiff !== 0) {
     return []; // Not a straight line
   }
-  
+
   if (rowDiff === 0) {
     // Horizontal movement
     const step = colDiff > 0 ? 1 : -1;
     for (let col = startTile.position.col + step; col !== endTile.position.col; col += step) {
-      const tile = grid.find(t => t.position.row === startTile.position.row && t.position.col === col);
+      const tile = grid.find(
+        (t) => t.position.row === startTile.position.row && t.position.col === col
+      );
       if (tile) path.push(tile);
     }
   } else if (colDiff === 0) {
     // Vertical movement
     const step = rowDiff > 0 ? 1 : -1;
     for (let row = startTile.position.row + step; row !== endTile.position.row; row += step) {
-      const tile = grid.find(t => t.position.row === row && t.position.col === startTile.position.col);
+      const tile = grid.find(
+        (t) => t.position.row === row && t.position.col === startTile.position.col
+      );
       if (tile) path.push(tile);
     }
   }
-  
+
   path.push(endTile);
   return path;
 };
 
-export const getOperatorsBetweenTiles = (tiles: Tile[]): string[] => {
-  // This would be determined by the actual swipe path through operator icons
-  // For now, return placeholder - will be updated with actual swipe detection
-  const operators: string[] = [];
-  
-  for (let i = 0; i < tiles.length - 1; i++) {
-    // Default to addition for now - actual implementation will detect which operator was swiped through
-    operators.push('+');
+/** Unicode symbols shown in the UI (keyboard paths still use ASCII `+`, `-`, `*`). */
+export const displayOperator = (operator: string): string => {
+  switch (operator) {
+    case '*':
+      return '×';
+    case '-':
+      return '−';
+    default:
+      return operator;
   }
-  
-  return operators;
 };
 
-export const formatCalculation = (tiles: Tile[], operators: string[]): string => {
+export const formatCalculation = (
+  tiles: Tile[],
+  operators: string[],
+  options?: { asciiOperators?: boolean }
+): string => {
+  const op = options?.asciiOperators ? (o: string) => o : displayOperator;
   let calculation = '';
-  
+
   for (let i = 0; i < tiles.length; i++) {
     calculation += tiles[i].value.toString();
     if (i < operators.length) {
-      calculation += ` ${operators[i]} `;
+      calculation += ` ${op(operators[i])} `;
     }
   }
-  
+
   return calculation;
+};
+
+/**
+ * Shows explicit nesting for left-to-right evaluation: two-step paths read as
+ * `((a op b) op c)` so they are not confused with standard precedence.
+ *
+ * Pass `{ asciiOperators: true }` for inline UI (e.g. feedback toast): Unicode − / ×
+ * next to digits can reorder badly under the Unicode bidi algorithm on some
+ * devices, making operands disappear or operators swap visually.
+ */
+export const formatCalculationGrouped = (
+  tiles: Tile[],
+  operators: string[],
+  options?: { asciiOperators?: boolean }
+): string => {
+  const op = options?.asciiOperators ? (o: string) => o : displayOperator;
+  if (tiles.length === 2 && operators.length === 1) {
+    return `${tiles[0].value} ${op(operators[0])} ${tiles[1].value}`;
+  }
+  if (tiles.length === 3 && operators.length === 2) {
+    const inner = `${tiles[0].value} ${op(operators[0])} ${tiles[1].value}`;
+    return `((${inner}) ${op(operators[1])} ${tiles[2].value})`;
+  }
+  return formatCalculation(tiles, operators, options);
 };

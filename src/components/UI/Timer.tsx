@@ -1,15 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
 
 export const Timer: React.FC = () => {
-  const { roundTime, gameStatus, updateTimer } = useGameStore();
-  const [displayTime, setDisplayTime] = useState(0);
+  const roundTime = useGameStore((s) => s.roundTime);
+  const gameStatus = useGameStore((s) => s.gameStatus);
+  const updateTimer = useGameStore((s) => s.updateTimer);
 
   useEffect(() => {
-    if (gameStatus !== 'playing') {
-      setDisplayTime(roundTime);
-      return;
-    }
+    if (gameStatus !== 'playing') return;
 
     const interval = setInterval(() => {
       updateTimer();
@@ -17,10 +15,6 @@ export const Timer: React.FC = () => {
 
     return () => clearInterval(interval);
   }, [gameStatus, updateTimer]);
-
-  useEffect(() => {
-    setDisplayTime(roundTime);
-  }, [roundTime]);
 
   const formatTime = (milliseconds: number) => {
     const seconds = Math.floor(milliseconds / 1000);
@@ -33,10 +27,15 @@ export const Timer: React.FC = () => {
     <div className="flex items-center justify-center bg-gray-800 text-white px-2 py-1 rounded-lg shadow-lg">
       <div className="flex items-center space-x-1">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
         </svg>
-        <span className="font-mono text-sm font-semibold">{formatTime(displayTime)}</span>
+        <span className="font-mono text-sm font-semibold">{formatTime(roundTime)}</span>
       </div>
     </div>
   );
-}; 
+};
