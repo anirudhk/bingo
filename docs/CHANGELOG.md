@@ -12,6 +12,10 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Added — guest multiplayer (2026-11-24)
+
+- **Play online without an account.** "Play as guest" uses Supabase anonymous sign-in (no email). Guests can use friend links and Quick match; their games are unrated, their profiles private, and they're deleted after 30 days idle. The daily leaderboard stays for accounts (guests play the daily offline). Migration `20261124000000_guest_multiplayer.sql`; needs "Allow anonymous sign-ins" in Supabase.
+
 ### Changed — launch polish (2026-11-23)
 
 - **Faster first load:** the Supabase SDK loads on demand (`loadSupabase` / `useSupabase`) and multiplayer, profile, leaderboard and legal screens are lazy routes. Main bundle 663 → 425 KB (134 KB gzipped).

@@ -156,3 +156,32 @@ update public.profiles set scheduled_hard_delete_at = now() - interval '1 minute
 create temp table purge_result as select public.purge_deleted_accounts() as n;
 select pg_temp.check('purge removes login and profile after the window', (select n from purge_result) = 1 and not exists (select 1 from auth.users where id = '33333333-3333-3333-3333-333333333333') and not exists (select 1 from public.profiles where id = '33333333-3333-3333-3333-333333333333'));
 select pg_temp.blocked('players cannot run the purge', $q$select public.purge_deleted_accounts()$q$, 'authenticated', :'A');
+
+-- ─── Guests (anonymous sign-ins) ───
+insert into auth.users(id, is_anonymous) values ('44444444-4444-4444-4444-444444444444', true);
+insert into auth.users(id, is_anonymous, created_at) values ('55555555-5555-5555-5555-555555555555', true, now() - interval '40 days');
+select pg_temp.check('guest gets a private guest_ profile',
+  (select is_public = false and handle like 'guest\_%' from public.profiles where id = '44444444-4444-4444-4444-444444444444'));
+select pg_temp.blocked('guest cannot start the leaderboard daily', $q$select public.start_daily_attempt()$q$, 'authenticated', '44444444-4444-4444-4444-444444444444');
+select pg_temp.blocked('guest calls internal_is_guest', $q$select public.internal_is_guest('44444444-4444-4444-4444-444444444444')$q$, 'authenticated', '44444444-4444-4444-4444-444444444444');
+create temp table ratings_before as select count(*) as n, coalesce(sum(rating), 0) as total from public.user_ratings where mode = 'multiplayer';
+insert into public.mp_sessions(id, invite_token, host_id, guest_id, state, difficulty, total_rounds, current_round, round_started_at, host_last_seen, guest_last_seen)
+values ('aaaaaaaa-0000-0000-0000-000000000004','t4',:'A','44444444-4444-4444-4444-444444444444','active','easy',1,1, now() - interval '5 seconds', now(), now());
+do $$ declare r jsonb; begin
+  perform set_config('request.jwt.claim.sub','44444444-4444-4444-4444-444444444444',false); set role authenticated;
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000004',1,'{1,2,3,4,5,6,7,8,9}',3,'{0,1}','{+}',0,'');
+  reset role; perform pg_temp.check('guest can play a verified round', (r->>'waiting_for_opponent')::boolean, r::text);
+end $$;
+select pg_sleep(0.2);
+do $$ declare r jsonb; begin
+  perform set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false); set role authenticated;
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000004',1,'{1,2,3,4,5,6,7,8,9}',3,'{4,1}','{-}',0,'');
+  reset role; perform pg_temp.check('match with a guest finishes', (r->>'finished')::boolean, r::text);
+end $$;
+select pg_temp.check('match with a guest has a winner but is unrated',
+  (select winner_user_id = '44444444-4444-4444-4444-444444444444' from public.mp_sessions where invite_token = 't4')
+  and (select count(*) = (select n from ratings_before) and coalesce(sum(rating), 0) = (select total from ratings_before) from public.user_ratings where mode = 'multiplayer'));
+create temp table guest_purge as select public.purge_deleted_accounts() as n;
+select pg_temp.check('purge removes guests idle 30+ days, keeps active ones',
+  not exists (select 1 from auth.users where id = '55555555-5555-5555-5555-555555555555')
+  and exists (select 1 from auth.users where id = '44444444-4444-4444-4444-444444444444'));

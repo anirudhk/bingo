@@ -47,7 +47,8 @@ export const HomeShell: React.FC = () => {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [signedInNotice, setSignedInNotice] = useState(false);
-  const showCloudAuth = isSupabaseConfigured() && !auth?.user;
+  // Guests (anonymous multiplayer sessions) still see Sign in.
+  const showCloudAuth = isSupabaseConfigured() && (!auth?.user || auth.isGuest);
 
   // /  → resolve to last-used tab (default Learn).
   useEffect(() => {

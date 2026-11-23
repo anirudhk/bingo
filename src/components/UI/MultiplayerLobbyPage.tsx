@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthOptional } from '../../auth/authContext';
+import { MultiplayerGuestGate } from './MultiplayerGuestGate';
 import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import type { DifficultyLevel } from '../../types/game';
 import { logger } from '../../utils/logger';
@@ -94,14 +95,7 @@ export const MultiplayerLobbyPage: React.FC = () => {
   }
 
   if (!auth?.user) {
-    return (
-      <div className="p-4 text-sm">
-        <Link className="font-bold text-lime-700 dark:text-lime-400" to="/learn">
-          ← Back
-        </Link>
-        <p className="mt-4 text-slate-600 dark:text-slate-300">Sign in to play multiplayer.</p>
-      </div>
-    );
+    return <MultiplayerGuestGate />;
   }
 
   const createInvite = async (listPublic: boolean) => {
@@ -182,8 +176,13 @@ export const MultiplayerLobbyPage: React.FC = () => {
           ← Play modes
         </Link>
         <h1 className="mt-4 text-2xl font-black text-slate-900 dark:text-white">Multiplayer</h1>
+        {auth.isGuest && (
+          <p className="mt-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+            Playing as a guest — games are unrated.
+          </p>
+        )}
         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-          Realtime sync via Supabase. Spectator & chat are out of scope.
+          Race a friend or a random opponent to solve the same board first.
         </p>
 
         <section className="mt-6 space-y-3 rounded-2xl border border-slate-200 bg-white/90 p-4 dark:border-slate-700 dark:bg-slate-900/80">

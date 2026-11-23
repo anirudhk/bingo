@@ -51,7 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setSession(data.session ?? null);
         setLoading(false);
 
-        if (data.session?.user) {
+        if (data.session?.user && !data.session.user.is_anonymous) {
           void mergeCloudProgressOnLogin(sb, data.session.user.id);
           stripSupabaseAuthParamsFromUrl();
         } else {
@@ -67,7 +67,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         data: { subscription },
       } = sb.auth.onAuthStateChange((event, next) => {
         setSession(next);
-        if (event === 'SIGNED_IN' && next?.user) {
+        // Guests have no cloud progress: their progress stays on the device.
+        if (event === 'SIGNED_IN' && next?.user && !next.user.is_anonymous) {
           try {
             sessionStorage.setItem('gg:authWelcome', '1');
           } catch {
@@ -93,6 +94,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user: session?.user ?? null,
       session,
       loading,
+      isGuest: Boolean(session?.user?.is_anonymous),
+      signInAsGuest: async () => {
+        const sb = await loadSupabase();
+        if (!sb) return 'Online play is not available right now.';
+        const { error } = await sb.auth.signInAnonymously();
+        return error ? error.message : null;
+      },
       authRedirectError,
       clearAuthRedirectError,
       signOut: async () => {
