@@ -57,6 +57,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   const navigate = useNavigate();
   const grid = useGameStore((s) => s.grid);
   const gapOperators = useGameStore((s) => s.gapOperators);
+  const comboStreak = useGameStore((s) => s.comboStreak);
   const currentTarget = useGameStore((s) => s.currentTarget);
   const currentRound = useGameStore((s) => s.currentRound);
   const totalRounds = useGameStore((s) => s.totalRounds);
@@ -597,7 +598,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     });
     setShowFeedback(true);
 
-    feedback(isCorrect ? 'correct' : 'wrong');
+    feedback(
+      isCorrect ? (useGameStore.getState().comboStreak >= 3 ? 'combo' : 'correct') : 'wrong'
+    );
     if (isCorrect) {
       setShowCelebration(true);
     }
@@ -1044,6 +1047,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
           round={currentRound}
           totalRounds={totalRounds}
           roundSolved={roundSolved}
+          combo={comboStreak}
         />
 
         {/* Game grid + actions directly beneath (actions stay visible; grid scrolls when tall). */}
@@ -1179,6 +1183,10 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
                               isInHint={isTileInHint(tile)}
                               hintPathIndex={getHintPathIndex(tile)}
                               isLegalNext={isLegalNextTile(tile)}
+                              isSuccess={roundSolved && isTileInPath(tile)}
+                              isError={
+                                showFeedback && !feedbackData.isCorrect && isTileInPath(tile)
+                              }
                               size={getTileSize()}
                               boxPx={fit?.tile}
                             />
@@ -1278,6 +1286,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
           isCorrect={feedbackData.isCorrect}
           negativeStep={feedbackData.negativeStep}
           isVisible={showFeedback}
+          combo={comboStreak}
           onContinue={barAutoDismisses ? undefined : handleContinue}
           onTryAgain={barAutoDismisses ? undefined : handleTryAgain}
         />

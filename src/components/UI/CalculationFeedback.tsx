@@ -1,6 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { describeMiss } from '../../utils/describeMiss';
+import { Mascot } from './Mascot';
+
+/** Praise grows with the combo: plain at first, fire from 3 in a row. */
+const correctTitle = (combo: number): string =>
+  combo >= 3 ? `🔥 ${combo} in a row!` : combo === 2 ? 'Nice — 2 in a row!' : 'Correct!';
 
 interface CalculationFeedbackProps {
   calculation: string;
@@ -17,6 +22,8 @@ interface CalculationFeedbackProps {
   onContinue?: () => void;
   /** Wrong answer: "Try again" closes the bar and clears the path. */
   onTryAgain?: () => void;
+  /** Correct answers in a row (including this one) — drives praise + Gridy's mood. */
+  combo?: number;
 }
 
 /**
@@ -34,6 +41,7 @@ export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
   negativeStep = false,
   onContinue,
   onTryAgain,
+  combo = 0,
 }) => {
   const actionRef = useRef<HTMLButtonElement>(null);
   const hasAction = isCorrect ? Boolean(onContinue) : Boolean(onTryAgain);
@@ -72,34 +80,14 @@ export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
         >
           <div className="mx-auto flex max-w-xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex min-w-0 items-start gap-3">
-              <span
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white ${
-                  isCorrect ? 'bg-emerald-500' : 'bg-rose-500'
-                }`}
-                aria-hidden
-              >
-                <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5">
-                  {isCorrect ? (
-                    <path
-                      d="M5 10.5l3.2 3.2L15 7"
-                      stroke="currentColor"
-                      strokeWidth="2.6"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  ) : (
-                    <path
-                      d="M6 6l8 8M14 6l-8 8"
-                      stroke="currentColor"
-                      strokeWidth="2.6"
-                      strokeLinecap="round"
-                    />
-                  )}
-                </svg>
-              </span>
+              <Mascot
+                mood={isCorrect ? (combo >= 3 ? 'cheer' : 'happy') : 'encourage'}
+                size={52}
+                className="-my-1 shrink-0"
+              />
               <div className="min-w-0">
                 <p className={`text-lg font-black ${tone.title}`}>
-                  {isCorrect ? 'Correct!' : 'Not quite'}
+                  {isCorrect ? correctTitle(combo) : 'Not quite — try again!'}
                 </p>
                 <p className={`text-base font-semibold tabular-nums ${tone.text}`}>
                   <span dir="ltr" style={{ unicodeBidi: 'isolate' }}>

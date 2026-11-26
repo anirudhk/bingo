@@ -15,6 +15,8 @@ interface GameHeaderProps {
   totalRounds: number;
   /** The current question is answered correctly (counts toward progress). */
   roundSolved: boolean;
+  /** Correct answers in a row; a 🔥 counter shows from 2. */
+  combo?: number;
 }
 
 /**
@@ -32,6 +34,7 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
   round,
   totalRounds,
   roundSolved,
+  combo = 0,
 }) => {
   // Progress counts questions answered correctly — it only moves on a solve.
   // (Time Attack has no fixed number of questions, so no bar there.)
@@ -74,6 +77,17 @@ export const GameHeader: React.FC<GameHeaderProps> = ({
 
         <div className="flex flex-col items-end gap-1 justify-self-end text-right">
           {timer}
+          {combo >= 2 && (
+            <motion.span
+              key={combo}
+              initial={{ scale: 1.4 }}
+              animate={{ scale: 1 }}
+              className="rounded-full bg-orange-100 px-2.5 py-0.5 text-xs font-black text-orange-800 dark:bg-orange-950 dark:text-orange-200"
+              aria-label={`${combo} correct in a row`}
+            >
+              🔥 {combo}
+            </motion.span>
+          )}
           <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-black text-amber-800 dark:bg-amber-950 dark:text-amber-200">
             Score {score}
           </span>

@@ -445,3 +445,33 @@ describe('difficulty ladder in the store', () => {
     useGameStore.getState().cleanup();
   });
 });
+
+describe('combo streak', () => {
+  const solveCurrent = () => {
+    const grid = useGameStore.getState().grid;
+    useGameStore.setState({ currentTarget: grid[0].value + grid[1].value });
+    return useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
+  };
+
+  it('counts correct answers in a row and resets on a wrong answer', () => {
+    useGameStore.getState().initializeLevel('u1-l1');
+    expect(solveCurrent()).toBe(true);
+    expect(useGameStore.getState().comboStreak).toBe(1);
+    useGameStore.getState().continueAfterSolve();
+    solveCurrent();
+    expect(useGameStore.getState().comboStreak).toBe(2);
+    useGameStore.getState().continueAfterSolve();
+    useGameStore.setState({ currentTarget: -1 });
+    const grid = useGameStore.getState().grid;
+    useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
+    expect(useGameStore.getState().comboStreak).toBe(0);
+  });
+
+  it('a hint ends the combo', () => {
+    useGameStore.getState().initializeLevel('u1-l1');
+    solveCurrent();
+    useGameStore.getState().continueAfterSolve();
+    useGameStore.getState().recordHint(5);
+    expect(useGameStore.getState().comboStreak).toBe(0);
+  });
+});
