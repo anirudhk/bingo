@@ -14,6 +14,10 @@ interface OperatorIconProps {
   row?: number;
   col?: number;
   onClick?: () => void;
+  /** Fill the whole cell (fit-to-screen board) instead of a fixed pill size. */
+  fill?: boolean;
+  /** Sign size in px when filling. */
+  fontPx?: number;
 }
 
 export const OperatorIcon: React.FC<OperatorIconProps> = ({
@@ -27,6 +31,8 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
   row,
   col,
   onClick,
+  fill = false,
+  fontPx,
 }) => {
   if (!operator || !['+', '-', '*'].includes(operator)) {
     logger.error(
@@ -72,8 +78,7 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
   };
 
   const baseClasses = `
-    ${getSizeClasses()}
-    ${positionClasses[position]}
+    ${fill ? 'h-full w-full' : `${getSizeClasses()} ${positionClasses[position]}`}
     flex items-center justify-center
     rounded-md font-bold
     select-none touch-manipulation
@@ -141,8 +146,8 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
   // land on the small pill itself.
   const hitBoxClasses =
     position === 'horizontal'
-      ? 'flex w-full min-h-0 flex-1 items-center justify-center'
-      : 'flex h-full min-w-0 flex-1 items-center justify-center';
+      ? `flex w-full min-h-0 flex-1 items-center justify-center ${fill ? 'p-[3px]' : ''}`
+      : `flex h-full min-w-0 flex-1 items-center justify-center ${fill ? 'p-[3px]' : ''}`;
 
   return (
     <div
@@ -166,6 +171,7 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
       <motion.span
         aria-hidden
         className={`${baseClasses} ${getStateClasses()} pointer-events-none`}
+        style={fill && fontPx ? { fontSize: fontPx } : undefined}
         initial={{ scale: 1, opacity: 0.7 }}
         animate={{
           scale: isSelected ? 1.1 : isInHint ? 1.05 : 1,

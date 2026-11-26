@@ -12,6 +12,14 @@ export interface GameCombination {
 
 export type DifficultyLevel = 'easy' | 'medium' | 'hard';
 
+/**
+ * The signs shown in each gap between two neighbouring tiles. Key format:
+ * `h:<row>:<col>` for the gap right of (row, col), `v:<row>:<col>` for the
+ * gap below it. `null` (on game state) means every gap shows every sign the
+ * config allows.
+ */
+export type GapOperators = Record<string, string[]>;
+
 export type GameMode =
   | 'classic'
   | 'timeAttack'
@@ -57,6 +65,8 @@ export interface GameState {
   wrongAttempts: number;
   /** Hints revealed this session — they cost stars like wrong answers. */
   hintsUsed: number;
+  /** Signs shown in each gap on the current board (null = every sign everywhere). */
+  gapOperators: GapOperators | null;
   /** Active static-puzzle id (only meaningful when gameMode === 'dailyPuzzle'). */
   currentPuzzleId: string | null;
 }
@@ -80,6 +90,9 @@ export interface DifficultyConfig {
   /** Prefer targets reachable by at most this many paths (lower = harder).
    *  Unset = no preference. Falls back to the hardest available targets. */
   maxSolutionsPerTarget?: number;
+  /** How many signs each gap shows (a random subset of availableOperators).
+   *  Unset = every gap shows every available sign. */
+  signsPerGap?: number;
 }
 
 /** A single level on the Learn path. Extends DifficultyConfig with identity. */

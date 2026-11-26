@@ -11,6 +11,11 @@ import {
   getAllCombinationsFromConfig,
   generateTargetsFromConfig,
   getTargetCandidates,
+  countDistinctSolutions,
+  generateValidBoard,
+  generateGapOperators,
+  generateValidGridFromConfigSeeded,
+  solutionKey,
 } from './gridGenerator';
 
 describe('generateGrid', () => {
@@ -47,10 +52,10 @@ describe('getAllCombinations', () => {
     });
   });
 
-  it('returns 3-tile combinations for medium with non-negative results in range', () => {
-    const cfg = DIFFICULTY_CONFIGS.medium;
-    const grid = generateGrid('medium');
-    const combos = getAllCombinations(grid, 'medium');
+  it('returns 3-tile combinations for hard with results in range', () => {
+    const cfg = DIFFICULTY_CONFIGS.hard;
+    const grid = generateGrid('hard');
+    const combos = getAllCombinations(grid, 'hard');
 
     combos.forEach((combo) => {
       expect(combo.tiles).toHaveLength(3);
@@ -99,8 +104,8 @@ describe('target selection quality', () => {
   // Generate many sessions — these properties must hold for every one.
   const sessions = (difficulty: 'easy' | 'medium' | 'hard', n = 200) =>
     Array.from({ length: n }, () => {
-      const grid = generateValidGrid(difficulty);
-      const combos = getAllCombinations(grid, difficulty);
+      const { grid, gaps } = generateValidBoard(difficulty);
+      const combos = getAllCombinations(grid, difficulty, gaps);
       return { combos, targets: generateTargets(combos, difficulty) };
     });
 
@@ -136,11 +141,15 @@ describe('target selection quality', () => {
     expect(unique / total).toBeGreaterThan(0.95);
   });
 
-  it('getTargetCandidates counts every solving path per result', () => {
+  it('getTargetCandidates counts each distinct solution once (either tap direction)', () => {
     const grid = generateValidGrid('medium');
     const combos = getAllCombinations(grid, 'medium');
     const candidates = getTargetCandidates(combos);
-    expect(candidates.reduce((sum, c) => sum + c.solutionCount, 0)).toBe(combos.length);
+    const distinctPerResult = [...new Set(combos.map((c) => c.result))].reduce(
+      (sum, r) => sum + countDistinctSolutions(combos.filter((c) => c.result === r)),
+      0
+    );
+    expect(candidates.reduce((sum, c) => sum + c.solutionCount, 0)).toBe(distinctPerResult);
     expect(new Set(candidates.map((c) => c.result)).size).toBe(candidates.length);
   });
 });
@@ -203,4 +212,71 @@ describe('generateValidGrid / validateGridHasSolutions', () => {
       }
     }
   );
+});
+
+describe('sign slots (signs per gap)', () => {
+  const allGapSigns = (gaps: Record<string, string[]>) => Object.values(gaps);
+
+  it.each([
+    ['easy', 1, 3],
+    ['medium', 2, 4],
+    ['hard', 2, 4],
+  ] as const)('%s boards show %i sign(s) in every gap of a %i×%i grid', (difficulty, k, n) => {
+    const { gaps } = generateValidBoard(difficulty);
+    expect(gaps).not.toBeNull();
+    // n rows × (n−1) horizontal gaps + (n−1) rows × n vertical gaps
+    expect(Object.keys(gaps!)).toHaveLength(2 * n * (n - 1));
+    allGapSigns(gaps!).forEach((signs) => {
+      expect(signs).toHaveLength(k);
+      expect(new Set(signs).size).toBe(k);
+      signs.forEach((op) => expect(['+', '-', '*']).toContain(op));
+    });
+  });
+
+  it('every combination uses only signs its gaps show', () => {
+    for (let i = 0; i < 20; i++) {
+      const { grid, gaps } = generateValidBoard('hard');
+      getAllCombinations(grid, 'hard', gaps).forEach((c) => {
+        c.operators.forEach((op, j) => {
+          const a = c.tiles[j].position;
+          const b = c.tiles[j + 1].position;
+          const key =
+            a.row === b.row
+              ? `h:${a.row}:${Math.min(a.col, b.col)}`
+              : `v:${Math.min(a.row, b.row)}:${a.col}`;
+          expect(gaps![key]).toContain(op);
+        });
+      });
+    }
+  });
+
+  it('counts paths in both tap directions, but as one solution', () => {
+    const cfg = { ...DIFFICULTY_CONFIGS.easy, gridSize: 2, targetRange: { min: 1, max: 99 } };
+    const grid = [
+      { id: 0, value: 3, position: { row: 0, col: 0 } },
+      { id: 1, value: 8, position: { row: 0, col: 1 } },
+      { id: 2, value: 1, position: { row: 1, col: 0 } },
+      { id: 3, value: 1, position: { row: 1, col: 1 } },
+    ];
+    const gaps = { 'h:0:0': ['-'], 'h:1:0': ['+'], 'v:0:0': ['+'], 'v:0:1': ['+'] };
+    const combos = getAllCombinationsFromConfig(grid, cfg, gaps);
+    // 8 − 3 = 5 is only reachable right-to-left.
+    expect(combos.some((c) => c.result === 5 && c.tiles[0].id === 1)).toBe(true);
+    // 1 + 1 both ways is the same solution.
+    const twos = combos.filter((c) => c.tiles.every((t) => t.position.row === 1) && c.result === 2);
+    expect(twos).toHaveLength(2);
+    expect(new Set(twos.map(solutionKey)).size).toBe(1);
+  });
+
+  it('Learn-style configs (no signsPerGap) show every sign everywhere', () => {
+    expect(generateGapOperators({ ...DIFFICULTY_CONFIGS.easy, signsPerGap: undefined })).toBeNull();
+  });
+
+  it('seeded multiplayer boards include identical gap signs for both players', () => {
+    const cfg = { ...DIFFICULTY_CONFIGS.medium, totalRounds: 1 };
+    const a = generateValidGridFromConfigSeeded(cfg, 'session|1|123');
+    const b = generateValidGridFromConfigSeeded(cfg, 'session|1|123');
+    expect(a?.gaps).toEqual(b?.gaps);
+    expect(a?.grid.map((t) => t.value)).toEqual(b?.grid.map((t) => t.value));
+  });
 });

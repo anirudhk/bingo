@@ -16,10 +16,14 @@ export const TimeAttackTimer: React.FC = () => {
       animate={{ scale: isLowTime ? [1, 1.1, 1] : 1 }}
       transition={{ duration: 0.5, repeat: isLowTime ? Infinity : 0 }}
     >
-      <div className={`text-2xl font-bold ${isLowTime ? 'text-red-500' : 'text-blue-600'}`}>
+      <div
+        className={`text-lg font-black leading-none tabular-nums ${isLowTime ? 'text-red-600' : 'text-blue-700 dark:text-blue-300'}`}
+      >
         {seconds}s
       </div>
-      <div className="text-sm text-gray-600">Rounds: {timeAttackRoundsCompleted || 0}</div>
+      <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+        {timeAttackRoundsCompleted || 0} solved
+      </div>
     </motion.div>
   );
 };

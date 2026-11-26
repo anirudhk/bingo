@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  GapOperators,
   GameState,
   DifficultyLevel,
   GameMode,
@@ -7,12 +8,10 @@ import type {
   DifficultyConfig,
   Puzzle,
 } from '../types/game';
-import { DIFFICULTY_CONFIGS, SUCCESS_DELAY_MS } from '../constants/game';
+import { DIFFICULTY_CONFIGS, SUCCESS_DELAY_MS, getPlayConfig } from '../constants/game';
 import { getLevel } from '../constants/levels';
 import {
-  generateValidGrid,
-  getAllCombinations,
-  generateTargets,
+  generateValidBoardFromConfig,
   generateValidGridFromConfig,
   getAllCombinationsFromConfig,
   generateTargetsFromConfig,
@@ -112,6 +111,7 @@ const createInitialState = (): GameState => ({
   currentLevelId: null,
   wrongAttempts: 0,
   hintsUsed: 0,
+  gapOperators: null,
   roundSolved: false,
   currentPuzzleId: null,
 });
@@ -136,16 +136,25 @@ const TIME_ATTACK_ROUNDS_PER_TIER = 2;
 const buildTimeAttackRound = (
   difficulty: DifficultyLevel,
   roundsCompleted: number
-): Pick<GameState, 'grid' | 'targetNumbers' | 'currentTarget'> | null => {
+): Pick<GameState, 'grid' | 'gapOperators' | 'targetNumbers' | 'currentTarget'> | null => {
+  const config = DIFFICULTY_CONFIGS[difficulty];
   for (let attempt = 0; attempt < MAX_INIT_RETRIES; attempt++) {
-    const grid = generateValidGrid(difficulty);
-    const targets = generateTargets(getAllCombinations(grid, difficulty), difficulty);
+    const { grid, gaps } = generateValidBoardFromConfig(config);
+    const targets = generateTargetsFromConfig(
+      getAllCombinationsFromConfig(grid, config, gaps),
+      config
+    );
     if (targets.length === 0) continue;
     const tier = Math.min(
       targets.length - 1,
       Math.floor(roundsCompleted / TIME_ATTACK_ROUNDS_PER_TIER)
     );
-    return { grid: cloneGridTiles(grid), targetNumbers: targets, currentTarget: targets[tier] };
+    return {
+      grid: cloneGridTiles(grid),
+      gapOperators: gaps,
+      targetNumbers: targets,
+      currentTarget: targets[tier],
+    };
   }
   logger.error(`buildTimeAttackRound: no solvable grid for "${difficulty}"`);
   return null;
@@ -160,19 +169,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     clearAutoAdvance();
     roundSolvedAt = null;
 
-    // Quick Game uses the easy config (3x3 grid, 2 tiles + 1 operator) and a
-    // 5-round structure — pick-up-and-play (see ADR-002).
+    // Quick Game keeps its own fixed shape (QUICK_GAME_CONFIG) and scores as
+    // easy; the other modes use the difficulty ladder (see ADR-002).
     const effectiveDifficulty = gameMode === 'quickGame' ? 'easy' : difficulty;
-    const effectiveConfig = DIFFICULTY_CONFIGS[effectiveDifficulty];
+    const effectiveConfig = getPlayConfig(gameMode, difficulty);
 
     let targetNumbers: number[] = [];
     let grid: Tile[] = [];
+    let gaps: GapOperators | null = null;
     let attempt = 0;
     while (attempt < MAX_INIT_RETRIES && targetNumbers.length === 0) {
       attempt += 1;
-      grid = generateValidGrid(effectiveDifficulty);
-      const combinations = getAllCombinations(grid, effectiveDifficulty);
-      targetNumbers = generateTargets(combinations, effectiveDifficulty);
+      const board = generateValidBoardFromConfig(effectiveConfig);
+      grid = board.grid;
+      gaps = board.gaps;
+      const combinations = getAllCombinationsFromConfig(grid, effectiveConfig, gaps);
+      targetNumbers = generateTargetsFromConfig(combinations, effectiveConfig);
     }
 
     if (targetNumbers.length === 0) {
@@ -193,6 +205,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       grid: cloneGridTiles(grid),
+      gapOperators: gaps,
       targetNumbers,
       currentTarget: targetNumbers[0],
       currentRound: 1,
@@ -279,6 +292,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: levelId,
       wrongAttempts: 0,
       hintsUsed: 0,
+      gapOperators: null,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -310,6 +324,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      gapOperators: null,
       roundSolved: false,
       currentPuzzleId: puzzle.id,
     });
@@ -334,7 +349,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    const { grid, targetNumbers } = built;
+    const { grid, gaps, targetNumbers } = built;
 
     set({
       grid: cloneGridTiles(grid),
@@ -356,6 +371,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      gapOperators: gaps,
       roundSolved: false,
       currentPuzzleId: null,
     });

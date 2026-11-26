@@ -12,6 +12,15 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Changed — difficulty ladder and fitted board (2026-11-26)
+
+- **Each gap shows only some signs** (Play modes): Easy 3×3, 2 numbers, 1 sign per gap (+ − ×, auto-selected — tap two touching numbers); Medium 4×4, 2 numbers, 2 signs per gap; Hard 4×4, 3 numbers, 2 signs per gap, one answer per target. Quick Game and Learn levels are unchanged.
+- **Paths count in both tap directions**, and a solution is identified by its tiles and the sign in each gap (8 − 3 tapped either way is one solution). The hint uses the same search.
+- **Multiplayer** rounds carry the gap signs; the server requires both players' boards (signs included) to match and rejects any sign its gap didn't show (migration `20261126000000_sign_slots.sql`).
+- **One-row game header** (Back · target · clock and score) replaces the header card and the separate target card.
+- **The board always fits the screen**: it measures the free space and sizes tiles and sign lanes to it — no scrolling at 390×844 or 990×742 on any difficulty, including 5×5 Learn levels. Sign buttons: 49 px on Easy, 29–36 px on Medium/Hard (were 16–21 px).
+- Difficulty cards describe the rules instead of showing age bands.
+
 ### Changed — UI feedback round (2026-11-24)
 
 - **Duolingo-style answer bar:** full-width at the bottom, stays until the player taps **Continue** / **Try again** (Time Attack and multiplayer still dismiss it automatically). The old floating box sat off-centre because its animation overrode the centring. The round clock stops at the solve, so reading the bar isn't timed.

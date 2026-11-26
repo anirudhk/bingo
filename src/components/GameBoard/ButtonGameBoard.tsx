@@ -1,7 +1,8 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { TargetDisplay } from '../UI/TargetDisplay';
+import { GameHeader } from './GameHeader';
+import { rhythmInstruction } from '../../utils/rhythmInstruction';
 import { MixedUnitIntroModal } from '../UI/MixedUnitIntroModal';
 import { CalculationFeedback } from '../UI/CalculationFeedback';
 import { Timer } from '../UI/Timer';
@@ -11,11 +12,13 @@ import { useGameStore } from '../../store/gameStore';
 import { usePrefsStore } from '../../store/prefsStore';
 import type { DifficultyConfig, DifficultyLevel, GameMode, Puzzle, Tile } from '../../types/game';
 import { formatCalculationGrouped, calculatePathResult } from '../../utils/calculator';
+import { FEEDBACK_CLEAR_DELAY_MS, HINT_SCORE_PENALTY, getPlayConfig } from '../../constants/game';
 import {
-  DIFFICULTY_CONFIGS,
-  FEEDBACK_CLEAR_DELAY_MS,
-  HINT_SCORE_PENALTY,
-} from '../../constants/game';
+  gapBetween,
+  gapKey,
+  getAllCombinationsFromConfig,
+  signsForGap,
+} from '../../utils/gridGenerator';
 import { LEVELS, UNITS, getLevel } from '../../constants/levels';
 import { utcDateKey } from '../../utils/puzzleStore';
 import { logger } from '../../utils/logger';
@@ -53,6 +56,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
 }) => {
   const navigate = useNavigate();
   const grid = useGameStore((s) => s.grid);
+  const gapOperators = useGameStore((s) => s.gapOperators);
   const currentTarget = useGameStore((s) => s.currentTarget);
   const currentRound = useGameStore((s) => s.currentRound);
   const totalRounds = useGameStore((s) => s.totalRounds);
@@ -138,7 +142,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
         targetRange: { min: puzzle.target, max: puzzle.target },
         totalRounds: 1,
       }
-    : (level ?? DIFFICULTY_CONFIGS[difficulty]);
+    : (level ?? getPlayConfig(gameMode, difficulty));
   const levelIndex = level ? LEVELS.findIndex((l) => l.id === level.id) : -1;
   const unit = level ? UNITS.find((u) => u.id === level.unitId) : undefined;
   const modeLabel =
@@ -169,6 +173,12 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
       : gameMode === 'dailyPuzzle'
         ? 'One puzzle today'
         : `Difficulty: ${difficulty}`;
+  const headerSubtitle =
+    gameMode === 'learning'
+      ? `${modeLabel} · ${contextTitle} · ${contextMeta}`
+      : gameMode === 'dailyPuzzle'
+        ? `Daily puzzle · ${contextTitle}`
+        : `${modeLabel} · ${difficulty.charAt(0).toUpperCase()}${difficulty.slice(1)}`;
 
   const showMixedUnitIntro =
     gameMode === 'learning' && levelId === 'u3-l1' && !learnMixedUnitIntroSeen && !initError;
@@ -373,6 +383,28 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     const isNumberTurn = totalSelections % 2 === 0; // 0, 2, 4, etc. are number turns
 
     if (!isNumberTurn) {
+      // A gap with a single sign needs no choice: tapping the neighbouring
+      // tile picks that sign automatically (Easy: just tap two numbers).
+      const last = selectedTiles[selectedTiles.length - 1];
+      const gap = last ? gapBetween(last.position, tile.position) : null;
+      const signs = gap ? signsForGap(gapOperators, config, gap.key) : [];
+      if (gap && signs.length === 1 && isOperatorAvailable(gap.row, gap.col, gap.position)) {
+        const operator = signs[0];
+        const newOperators = [...selectedOperators, operator];
+        const newPositions = [
+          ...selectedOperatorPositions,
+          { row: gap.row, col: gap.col, position: gap.position, operator },
+        ];
+        const newTiles = [...selectedTiles, tile];
+        setSelectedOperators(newOperators);
+        setSelectedOperatorPositions(newPositions);
+        setSelectedTiles(newTiles);
+        const completes =
+          newTiles.length === config.tilesCount && newOperators.length === config.operatorsCount;
+        if (completes) checkAnswer(newTiles, newOperators);
+        else feedback('tap');
+        return;
+      }
       // It's not a number's turn, vibrate and don't select
       feedback('invalid');
       return;
@@ -528,161 +560,18 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     }
   };
 
-  const findValidSolutions = () => {
-    const solutions: Array<{
-      tiles: Tile[];
-      operatorPositions: Array<{
-        row: number;
-        col: number;
-        position: 'horizontal' | 'vertical';
-        operator: string;
-      }>;
-    }> = [];
-
-    // Try all possible combinations based on difficulty
-    if (config.tilesCount === 2) {
-      // Easy mode: try all adjacent pairs
-      for (let i = 0; i < grid.length; i++) {
-        const tile1 = grid[i];
-        // Check horizontal adjacency
-        if (tile1.position.col < config.gridSize - 1) {
-          const tile2 = grid.find(
-            (t) =>
-              t.position.row === tile1.position.row && t.position.col === tile1.position.col + 1
-          );
-          if (tile2) {
-            for (const operator of config.availableOperators) {
-              const result = calculatePathResult([tile1, tile2], [operator]);
-              if (result === currentTarget) {
-                solutions.push({
-                  tiles: [tile1, tile2],
-                  operatorPositions: [
-                    {
-                      row: tile1.position.row,
-                      col: tile1.position.col,
-                      position: 'horizontal',
-                      operator,
-                    },
-                  ],
-                });
-              }
-            }
-          }
-        }
-
-        // Check vertical adjacency
-        if (tile1.position.row < config.gridSize - 1) {
-          const tile2 = grid.find(
-            (t) =>
-              t.position.row === tile1.position.row + 1 && t.position.col === tile1.position.col
-          );
-          if (tile2) {
-            for (const operator of config.availableOperators) {
-              const result = calculatePathResult([tile1, tile2], [operator]);
-              if (result === currentTarget) {
-                solutions.push({
-                  tiles: [tile1, tile2],
-                  operatorPositions: [
-                    {
-                      row: tile1.position.row,
-                      col: tile1.position.col,
-                      position: 'vertical',
-                      operator,
-                    },
-                  ],
-                });
-              }
-            }
-          }
-        }
-      }
-    } else if (config.tilesCount === 3) {
-      // Medium/Hard mode: try all valid 3-tile combinations
-      for (let i = 0; i < grid.length; i++) {
-        const tile1 = grid[i];
-
-        // Try horizontal sequences
-        if (tile1.position.col <= config.gridSize - 3) {
-          const tile2 = grid.find(
-            (t) =>
-              t.position.row === tile1.position.row && t.position.col === tile1.position.col + 1
-          );
-          const tile3 = grid.find(
-            (t) =>
-              t.position.row === tile1.position.row && t.position.col === tile1.position.col + 2
-          );
-
-          if (tile2 && tile3) {
-            for (const op1 of config.availableOperators) {
-              for (const op2 of config.availableOperators) {
-                const result = calculatePathResult([tile1, tile2, tile3], [op1, op2]);
-                if (result === currentTarget) {
-                  solutions.push({
-                    tiles: [tile1, tile2, tile3],
-                    operatorPositions: [
-                      {
-                        row: tile1.position.row,
-                        col: tile1.position.col,
-                        position: 'horizontal',
-                        operator: op1,
-                      },
-                      {
-                        row: tile2.position.row,
-                        col: tile2.position.col,
-                        position: 'horizontal',
-                        operator: op2,
-                      },
-                    ],
-                  });
-                }
-              }
-            }
-          }
-        }
-
-        // Try vertical sequences
-        if (tile1.position.row <= config.gridSize - 3) {
-          const tile2 = grid.find(
-            (t) =>
-              t.position.row === tile1.position.row + 1 && t.position.col === tile1.position.col
-          );
-          const tile3 = grid.find(
-            (t) =>
-              t.position.row === tile1.position.row + 2 && t.position.col === tile1.position.col
-          );
-
-          if (tile2 && tile3) {
-            for (const op1 of config.availableOperators) {
-              for (const op2 of config.availableOperators) {
-                const result = calculatePathResult([tile1, tile2, tile3], [op1, op2]);
-                if (result === currentTarget) {
-                  solutions.push({
-                    tiles: [tile1, tile2, tile3],
-                    operatorPositions: [
-                      {
-                        row: tile1.position.row,
-                        col: tile1.position.col,
-                        position: 'vertical',
-                        operator: op1,
-                      },
-                      {
-                        row: tile2.position.row,
-                        col: tile2.position.col,
-                        position: 'vertical',
-                        operator: op2,
-                      },
-                    ],
-                  });
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    return solutions;
-  };
+  // Every solution to the current target, respecting each gap's signs and
+  // both tap directions (same search the generator uses).
+  const findValidSolutions = () =>
+    getAllCombinationsFromConfig(grid, config, gapOperators)
+      .filter((c) => c.result === currentTarget)
+      .map((c) => ({
+        tiles: c.tiles,
+        operatorPositions: c.operators.map((operator, i) => {
+          const g = gapBetween(c.tiles[i].position, c.tiles[i + 1].position)!;
+          return { row: g.row, col: g.col, position: g.position, operator };
+        }),
+      }));
 
   const checkAnswer = (tiles: Tile[], operators: string[]) => {
     if (inputLocked) return;
@@ -959,7 +848,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
 
     return (
       <div className="relative z-[1] flex h-full w-full flex-col items-stretch justify-center">
-        {config.availableOperators.map((operator) => (
+        {signsForGap(gapOperators, config, gapKey('h', row, col)).map((operator) => (
           <OperatorIcon
             key={`h-${row}-${col}-${operator}`}
             operator={operator as '+' | '-' | '*'}
@@ -969,6 +858,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
             isLegalNext={isLegalNextOperatorSlot(row, col, 'horizontal')}
             isAvailable={isOperatorAvailable(row, col, 'horizontal')}
             size={getOperatorSize()}
+            fill={Boolean(fit)}
+            fontPx={fit?.signPx}
             row={row}
             col={col}
             onClick={() => handleOperatorClick(operator, row, col, 'horizontal')}
@@ -983,7 +874,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
 
     return (
       <div className="relative z-[1] flex h-full w-full items-stretch justify-center">
-        {config.availableOperators.map((operator) => (
+        {signsForGap(gapOperators, config, gapKey('v', row, col)).map((operator) => (
           <OperatorIcon
             key={`v-${row}-${col}-${operator}`}
             operator={operator as '+' | '-' | '*'}
@@ -993,6 +884,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
             isLegalNext={isLegalNextOperatorSlot(row, col, 'vertical')}
             isAvailable={isOperatorAvailable(row, col, 'vertical')}
             size={getOperatorSize()}
+            fill={Boolean(fit)}
+            fontPx={fit?.signPx}
             row={row}
             col={col}
             onClick={() => handleOperatorClick(operator, row, col, 'vertical')}
@@ -1001,6 +894,44 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
       </div>
     );
   };
+
+  // ─── Fit-to-screen board ───────────────────────────────────────────────
+  // Measure the free space and size tiles + sign lanes so the whole board
+  // fits without scrolling. Sign lanes get wider when a gap shows more signs.
+  const [boardBox, setBoardBox] = useState<{ w: number; h: number } | null>(null);
+  useLayoutEffect(() => {
+    const el = tilesContainerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => setBoardBox({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const signsShown = gapOperators
+    ? Math.max(1, ...Object.values(gapOperators).map((signs) => signs.length))
+    : config.availableOperators.length;
+  const GRID_GAP = 4;
+  const GRID_PAD = 6;
+  const fit = (() => {
+    if (!boardBox) return null;
+    const n = config.gridSize;
+    const laneRatio = signsShown <= 1 ? 0.6 : signsShown === 2 ? 0.64 : 0.74;
+    const units = n + (n - 1) * laneRatio;
+    const fixed = 2 * GRID_PAD + (2 * n - 2) * GRID_GAP;
+    const maxTile = n <= 3 ? 84 : n === 4 ? 72 : 60;
+    const tile = Math.floor(
+      Math.min((boardBox.w - fixed) / units, (boardBox.h - fixed) / units, maxTile)
+    );
+    if (!Number.isFinite(tile) || tile < 24) return null;
+    const lane = Math.round(tile * laneRatio);
+    const track = Array.from({ length: 2 * n - 1 }, (_, i) =>
+      i % 2 === 0 ? `${tile}px` : `${lane}px`
+    ).join(' ');
+    const signPx = Math.max(11, Math.min(24, Math.round(Math.min(lane, tile / signsShown) * 0.5)));
+    return { tile, lane, track, signPx };
+  })();
 
   const gridContainerClasses =
     config.gridSize === 4
@@ -1092,69 +1023,55 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
         onDismiss={() => markLearnMixedUnitIntroSeen()}
       />
 
-      <div className="max-w-4xl mx-auto flex h-full min-h-0 flex-col">
-        {/* Header */}
-        <div className="mb-3 sm:mb-4">
-          <div className="rounded-[1.5rem] border border-white/70 bg-white/90 p-3 shadow-lg shadow-slate-200/70 backdrop-blur dark:border-slate-700 dark:bg-slate-900/90 dark:shadow-black/20">
-            <div className="flex items-center justify-between gap-3">
-              <button
-                onClick={handleBackToLobby}
-                className="min-h-[44px] min-w-[44px] rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition-colors hover:bg-slate-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-lime-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-              >
-                ← Back
-              </button>
-              <div className="min-w-0 flex-1 text-center">
-                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-green-700 dark:text-lime-300">
-                  {modeLabel}
-                </div>
-                <h1 className="truncate text-lg font-black tracking-tight text-slate-900 dark:text-white">
-                  {contextTitle}
-                </h1>
-              </div>
-              {gameMode === 'learning' ? (
-                // No clock on Learn levels: lessons shouldn't feel like a race.
-                <div className="w-16 shrink-0" aria-hidden />
-              ) : (
-                <div className="rounded-2xl bg-lime-50 px-3 py-2 text-xs font-black text-lime-700 dark:bg-lime-950 dark:text-lime-200">
-                  {gameMode === 'timeAttack' ? <TimeAttackTimer /> : <Timer />}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs font-black">
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                {contextMeta}
-              </span>
-              <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-950 dark:text-amber-200">
-                Score {score}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Target Display */}
-        <TargetDisplay
+      <div className="max-w-4xl mx-auto flex h-full min-h-0 flex-col gap-2 sm:gap-3">
+        <GameHeader
+          onBack={handleBackToLobby}
           currentTarget={currentTarget}
+          subtitle={headerSubtitle}
+          rules={rhythmInstruction(
+            config.tilesCount,
+            config.availableOperators,
+            gapOperators ? config.signsPerGap : undefined
+          )}
+          score={score}
+          timer={
+            gameMode === 'learning' ? undefined : gameMode === 'timeAttack' ? (
+              <TimeAttackTimer />
+            ) : (
+              <Timer />
+            )
+          }
           round={currentRound}
           totalRounds={totalRounds}
-          pathTiles={config.tilesCount}
-          pathOperators={config.operatorsCount}
-          operators={config.availableOperators}
           roundSolved={roundSolved}
-          compact={config.gridSize >= 4}
         />
 
         {/* Game grid + actions directly beneath (actions stay visible; grid scrolls when tall). */}
         <div className="mb-2 flex min-h-0 flex-1 flex-col px-0 sm:mb-4">
           <div
             ref={tilesContainerRef}
-            className="flex min-h-0 flex-1 justify-center overflow-x-hidden overflow-y-auto"
+            className={`flex min-h-0 flex-1 justify-center overflow-x-hidden ${fit ? 'overflow-y-hidden' : 'overflow-y-auto'}`}
             aria-label="Game board"
             role="grid"
           >
             <motion.div
               ref={gridBoardRef}
-              className={`${gridContainerClasses} relative my-auto max-h-full max-w-full`}
+              className={
+                fit
+                  ? 'relative my-auto rounded-xl bg-gray-50 shadow-inner dark:bg-slate-800/60'
+                  : `${gridContainerClasses} relative my-auto max-h-full max-w-full`
+              }
+              style={
+                fit
+                  ? {
+                      display: 'grid',
+                      gridTemplateColumns: fit.track,
+                      gridTemplateRows: fit.track,
+                      gap: GRID_GAP,
+                      padding: GRID_PAD,
+                    }
+                  : undefined
+              }
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.3 }}
@@ -1189,7 +1106,11 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
                       return (
                         <div
                           key={`empty-${row}-${col}`}
-                          style={numberTileBoxStyle(getTileSize())}
+                          style={
+                            fit
+                              ? { width: fit.tile, height: fit.tile }
+                              : numberTileBoxStyle(getTileSize())
+                          }
                           aria-hidden
                         />
                       );
@@ -1259,6 +1180,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
                               hintPathIndex={getHintPathIndex(tile)}
                               isLegalNext={isLegalNextTile(tile)}
                               size={getTileSize()}
+                              boxPx={fit?.tile}
                             />
                           </motion.div>
                         </div>
