@@ -261,3 +261,22 @@ select pg_temp.check('host ends the game', (select e is null from end_err) and (
 select pg_temp.check('no joining a finished game', pg_temp.join_as('99999999-9999-9999-9999-999999999999', (select code from cls), 'Leo') like '%finished%');
 select pg_temp.blocked('anon cannot create rooms', $q$select public.class_create_room('easy', 300)$q$, 'anon', null);
 select pg_temp.blocked('player calls internal_clean_nickname', $q$select public.internal_clean_nickname('Maya')$q$, 'authenticated', '77777777-7777-7777-7777-777777777777');
+
+-- ─── API grants: what the app reads works, nothing extra ───
+select pg_temp.check('anon can read puzzles and the leaderboard',
+  has_table_privilege('anon', 'public.puzzles', 'select') and has_table_privilege('anon', 'public.daily_leaderboard_entries', 'select'));
+select pg_temp.check('players can read and save their own progress',
+  has_table_privilege('authenticated', 'public.user_progress', 'select') and has_table_privilege('authenticated', 'public.user_progress', 'insert') and has_table_privilege('authenticated', 'public.user_progress', 'update'));
+select pg_temp.check('class room members can read the room and leaderboard',
+  has_table_privilege('authenticated', 'public.class_rooms', 'select') and has_table_privilege('authenticated', 'public.class_players', 'select'));
+select pg_temp.check('no API role can truncate any table',
+  not exists (select 1 from pg_tables t where t.schemaname = 'public'
+    and (has_table_privilege('anon', format('%I.%I', t.schemaname, t.tablename), 'truncate') or has_table_privilege('authenticated', format('%I.%I', t.schemaname, t.tablename), 'truncate'))),
+  (select string_agg(t.tablename, ', ') from pg_tables t where t.schemaname = 'public' and has_table_privilege('authenticated', format('%I.%I', t.schemaname, t.tablename), 'truncate')));
+select pg_temp.check('internal tables stay unreadable',
+  not has_table_privilege('authenticated', 'public.class_boards', 'select') and not has_table_privilege('authenticated', 'public.cheat_flags', 'select') and not has_table_privilege('anon', 'public.client_errors', 'select'));
+do $$ declare n int; begin
+  perform set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false); set role authenticated;
+  select count(*) into n from public.user_ratings; reset role;
+  perform pg_temp.check('a player reads their own ratings', n > 0, n::text);
+end $$;
