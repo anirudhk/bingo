@@ -12,6 +12,11 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Added — Number Buddies (2026-11-26)
+
+- **13 collectible buddies**, each earned by a clear goal (first level, 3 stars, each unit, 5 in a row, daily solves and streaks, 10 in one Time Attack, plus a secret one). No random drops, nothing to buy. Unlocks are derived from saved progress (`earnedBuddyIds`), stored with their unlock date (progress store v4).
+- **Collection page** (`/buddies`): earned buddies in colour, locked ones as silhouettes with their goal; **Learn-screen card** with the count; **"New buddy unlocked" banner** with the unlock sound on the completion screen.
+
 ### Added — juice, combos and Gridy (2026-11-26)
 
 - **Gridy**, an original mascot (a living number tile with a screen face and a "+" antenna, pure SVG): cheers, smiles or encourages in the answer bar and on the completion screens.

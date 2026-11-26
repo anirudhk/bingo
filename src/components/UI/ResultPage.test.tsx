@@ -260,3 +260,23 @@ describe('<ResultPage /> star guidance', () => {
     expect(screen.queryByText(/for 3 stars/i)).not.toBeInTheDocument();
   });
 });
+
+describe('<ResultPage /> Number Buddies', () => {
+  it('announces buddies earned by this level', () => {
+    act(() => {
+      useGameStore.setState({
+        gameMode: 'learning',
+        currentLevelId: 'u1-l1',
+        wrongAttempts: 0,
+        score: 50,
+        gameStatus: 'completed',
+        totalRounds: 5,
+        difficulty: 'easy',
+      });
+    });
+    renderResult();
+    expect(screen.getAllByText(/new buddy unlocked/i)).toHaveLength(2);
+    expect(screen.getByText('Sprout')).toBeInTheDocument();
+    expect(screen.getByText('Star Kit')).toBeInTheDocument();
+  });
+});

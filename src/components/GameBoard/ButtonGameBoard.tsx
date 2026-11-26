@@ -10,6 +10,7 @@ import { TimeAttackTimer } from '../UI/TimeAttackTimer';
 import { CelebrationParticles } from '../UI/CelebrationParticles';
 import { useGameStore } from '../../store/gameStore';
 import { usePrefsStore } from '../../store/prefsStore';
+import { useProgressStore } from '../../store/progressStore';
 import type { DifficultyConfig, DifficultyLevel, GameMode, Puzzle, Tile } from '../../types/game';
 import { formatCalculationGrouped, calculatePathResult } from '../../utils/calculator';
 import { FEEDBACK_CLEAR_DELAY_MS, HINT_SCORE_PENALTY, getPlayConfig } from '../../constants/game';
@@ -598,9 +599,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     });
     setShowFeedback(true);
 
-    feedback(
-      isCorrect ? (useGameStore.getState().comboStreak >= 3 ? 'combo' : 'correct') : 'wrong'
-    );
+    const combo = useGameStore.getState().comboStreak;
+    feedback(isCorrect ? (combo >= 3 ? 'combo' : 'correct') : 'wrong');
+    if (isCorrect) useProgressStore.getState().recordCombo(combo);
     if (isCorrect) {
       setShowCelebration(true);
     }

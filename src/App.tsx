@@ -72,6 +72,9 @@ const MultiplayerSessionPage = lazy(() =>
 const MultiplayerJoinPage = lazy(() =>
   import('./components/UI/MultiplayerJoinPage').then((m) => ({ default: m.MultiplayerJoinPage }))
 );
+const BuddiesPage = lazy(() =>
+  import('./components/UI/BuddiesPage').then((m) => ({ default: m.BuddiesPage }))
+);
 
 const RouteFallback: React.FC = () => (
   <div className="flex h-full items-center justify-center text-sm text-slate-500" role="status">
@@ -193,6 +196,7 @@ function App() {
                   <Route path="/play/mp/:sessionId" element={<MultiplayerSessionPage />} />
                   <Route path="/play/join/:token" element={<MultiplayerJoinPage />} />
 
+                  <Route path="/buddies" element={<BuddiesPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/leaderboard/daily" element={<DailyLeaderboardPage />} />

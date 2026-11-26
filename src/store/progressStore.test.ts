@@ -106,3 +106,20 @@ describe('computeStars with hints', () => {
     expect(computeStars(0, 5)).toBe(1);
   });
 });
+
+describe('buddies in saved progress', () => {
+  it('syncBuddies unlocks newly earned buddies exactly once', () => {
+    useProgressStore.getState().completeLevel('u1-l1', 3, 50);
+    expect(useProgressStore.getState().syncBuddies().sort()).toEqual(['sprout', 'star-kit']);
+    expect(useProgressStore.getState().syncBuddies()).toEqual([]);
+    expect(Object.keys(useProgressStore.getState().buddies)).toHaveLength(2);
+  });
+
+  it('recordCombo keeps the best', () => {
+    useProgressStore.getState().recordCombo(3);
+    useProgressStore.getState().recordCombo(2);
+    expect(useProgressStore.getState().bestCombo).toBe(3);
+    useProgressStore.getState().recordCombo(5);
+    expect(useProgressStore.getState().syncBuddies()).toContain('blaze');
+  });
+});
