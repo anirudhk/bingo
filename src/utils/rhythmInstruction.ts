@@ -12,6 +12,9 @@ export const rhythmInstruction = (
     return 'Tap two numbers that touch — the sign between them does the maths.';
   }
   if (pathTiles <= 2) return 'Tap a number, a sign, then a number next to it.';
-  const line = `Tap ${pathTiles} numbers in a straight line, with a sign between each.`;
+  const words: Record<number, string> = { 3: 'three', 4: 'four', 5: 'five' };
+  const n = words[pathTiles] ?? String(pathTiles);
+  const rhythm = Array.from({ length: pathTiles }, () => 'number').join(', sign, ');
+  const line = `Use ${n} numbers in one row or column: tap ${rhythm}.`;
   return operators.includes('*') ? `${line} Work left to right: (2 + 3) × 4 = 20.` : line;
 };

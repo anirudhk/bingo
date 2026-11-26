@@ -27,6 +27,19 @@ export const UpdateToast: React.FC = () => {
           logger.debug('SW: new version available, prompting user');
           setNeedRefresh(true);
         },
+        // The browser only looks for a new version when the page loads, so a
+        // tab left open would keep the old game forever. Check every half
+        // hour and whenever the player comes back to the tab.
+        onRegisteredSW(_url, registration) {
+          if (!registration) return;
+          const check = () => {
+            if (navigator.onLine) void registration.update().catch(() => undefined);
+          };
+          setInterval(check, 30 * 60 * 1000);
+          document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') check();
+          });
+        },
         onOfflineReady() {
           logger.debug('SW: offline ready');
         },
