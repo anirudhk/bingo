@@ -43,6 +43,12 @@ interface ButtonGameBoardProps {
   /** Called after every completed path (right or wrong) — lets the daily and
    *  multiplayer screens send the move to the server for verification. */
   onAttempt?: (attempt: { tileIds: number[]; operators: string[]; correct: boolean }) => void;
+  /** Replaces the header subtitle (e.g. "Class race · Room ABC123"). */
+  labelOverride?: string;
+  /** Replaces the header clock (e.g. a classroom countdown). */
+  timerOverride?: React.ReactNode;
+  /** Where Back goes (defaults to the mode's lobby). */
+  onBack?: () => void;
 }
 
 export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
@@ -54,6 +60,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   multiplayerRoundKey,
   lockInteraction = false,
   onAttempt,
+  labelOverride,
+  timerOverride,
+  onBack,
 }) => {
   const navigate = useNavigate();
   const grid = useGameStore((s) => s.grid);
@@ -1029,9 +1038,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
 
       <div className="max-w-4xl mx-auto flex h-full min-h-0 flex-col gap-2 sm:gap-3">
         <GameHeader
-          onBack={handleBackToLobby}
+          onBack={onBack ?? handleBackToLobby}
           currentTarget={currentTarget}
-          subtitle={headerSubtitle}
+          subtitle={labelOverride ?? headerSubtitle}
           rules={rhythmInstruction(
             config.tilesCount,
             config.availableOperators,
@@ -1039,11 +1048,12 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
           )}
           score={score}
           timer={
-            gameMode === 'learning' ? undefined : gameMode === 'timeAttack' ? (
+            timerOverride ??
+            (gameMode === 'learning' ? undefined : gameMode === 'timeAttack' ? (
               <TimeAttackTimer />
             ) : (
               <Timer />
-            )
+            ))
           }
           round={currentRound}
           totalRounds={totalRounds}

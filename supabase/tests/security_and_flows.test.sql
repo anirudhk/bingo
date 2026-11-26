@@ -61,14 +61,16 @@ select pg_temp.check('only allow-listed functions are callable by anon/authentic
       and p.proname <> all (array['get_puzzle_by_id','get_next_puzzle_by_theme','rpc_server_now','report_client_error',
         'request_account_deletion','export_my_data','start_daily_attempt','submit_daily_guess','mp_create_invite',
         'mp_join_invite','mp_peek_invite','mp_set_ready','mp_heartbeat','mp_submit_round','mp_claim_forfeit',
-        'mp_enter_queue','mp_leave_queue','mp_poll_matchmaking','mp_create_rematch','mp_archive_session'])
+        'mp_enter_queue','mp_leave_queue','mp_poll_matchmaking','mp_create_rematch','mp_archive_session',
+        'class_create_room','class_join','class_start','class_end','class_submit','internal_class_member'])
   ),
   (select string_agg(p.proname, ', ') from pg_proc p join pg_namespace n on n.oid = p.pronamespace
     where n.nspname = 'public' and (has_function_privilege('anon', p.oid, 'execute') or has_function_privilege('authenticated', p.oid, 'execute'))
       and p.proname <> all (array['get_puzzle_by_id','get_next_puzzle_by_theme','rpc_server_now','report_client_error',
         'request_account_deletion','export_my_data','start_daily_attempt','submit_daily_guess','mp_create_invite',
         'mp_join_invite','mp_peek_invite','mp_set_ready','mp_heartbeat','mp_submit_round','mp_claim_forfeit',
-        'mp_enter_queue','mp_leave_queue','mp_poll_matchmaking','mp_create_rematch','mp_archive_session'])));
+        'mp_enter_queue','mp_leave_queue','mp_poll_matchmaking','mp_create_rematch','mp_archive_session',
+        'class_create_room','class_join','class_start','class_end','class_submit','internal_class_member'])));
 -- ─── Error reports: anon can write, nobody can read ───
 select pg_temp.check('anon can file an error report', pg_temp.run($q$select public.report_client_error('{"message":"boom","source":"window","path":"/bingo/"}')$q$, 'anon', null) is null);
 select pg_temp.check('error report stored', (select count(*) from public.client_errors) = 1);
@@ -204,3 +206,58 @@ end $$;
 select pg_temp.check('internal_valid_gaps accepts a well-formed easy board',
   public.internal_valid_gaps('{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb, 3, 1, array['+','-','*']));
 select pg_temp.blocked('player calls internal_valid_gaps', $q$select public.internal_valid_gaps(null, 3, 1, array['+'])$q$, 'authenticated', :'A');
+
+-- ─── Classroom live mode ───
+insert into auth.users(id, is_anonymous) values ('66666666-6666-6666-6666-666666666666', true), ('77777777-7777-7777-7777-777777777777', true), ('88888888-8888-8888-8888-888888888888', true), ('99999999-9999-9999-9999-999999999999', true);
+create temp table cls(room uuid, code text);
+grant all on cls to authenticated;
+do $$ begin
+  perform set_config('request.jwt.claim.sub','66666666-6666-6666-6666-666666666666',false); set role authenticated;
+  insert into cls select * from public.class_create_room('easy', 300);
+  reset role;
+end $$;
+select pg_temp.check('teacher creates a room with a 6-letter code', (select length(code) = 6 and code ~ '^[A-Z2-9]+$' from cls));
+select pg_temp.blocked('room length must be 3, 5 or 10 minutes', $q$select public.class_create_room('easy', 7)$q$, 'authenticated', '66666666-6666-6666-6666-666666666666');
+create function pg_temp.join_as(uid text, code text, nick text) returns text language plpgsql as $$
+declare e text; begin
+  perform set_config('request.jwt.claim.sub', uid, true); set local role authenticated;
+  begin perform public.class_join(code, nick); e := null; exception when others then e := sqlerrm; end;
+  reset role; return e;
+end $$;
+select pg_temp.check('student joins with a nickname', pg_temp.join_as('77777777-7777-7777-7777-777777777777', (select lower(code) from cls), '  Maya  ') is null);
+select pg_temp.check('rude nickname is refused', pg_temp.join_as('88888888-8888-8888-8888-888888888888', (select code from cls), 'Shithead') like '%different nickname%');
+select pg_temp.check('names like Cassie and Button are fine', pg_temp.join_as('88888888-8888-8888-8888-888888888888', (select code from cls), 'Cassie Button') is null);
+select pg_temp.check('a taken nickname is refused', pg_temp.join_as('99999999-9999-9999-9999-999999999999', (select code from cls), 'maya') like '%taken%');
+select pg_temp.check('wrong code is refused', pg_temp.join_as('99999999-9999-9999-9999-999999999999', 'ZZZZZZ', 'Leo') like '%no room%');
+do $$ declare n int; begin
+  perform set_config('request.jwt.claim.sub','99999999-9999-9999-9999-999999999999',false); set role authenticated;
+  select count(*) into n from public.class_players; reset role;
+  perform pg_temp.check('outsiders cannot see a room''s players', n = 0, n::text);
+  perform set_config('request.jwt.claim.sub','77777777-7777-7777-7777-777777777777',false); set role authenticated;
+  select count(*) into n from public.class_players; reset role;
+  perform pg_temp.check('students see their room''s leaderboard', n = 2, n::text);
+end $$;
+select pg_temp.blocked('cannot answer before the game starts', format($q$select public.class_submit(%L,0,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{+}')$q$, (select room from cls)), 'authenticated', '77777777-7777-7777-7777-777777777777');
+select pg_temp.blocked('only the host can start', format($q$select public.class_start(%L)$q$, (select room from cls)), 'authenticated', '77777777-7777-7777-7777-777777777777');
+select pg_temp.check('host starts the game', pg_temp.run(format($q$select public.class_start(%L)$q$, (select room from cls)), 'authenticated', '66666666-6666-6666-6666-666666666666') is null);
+do $$ declare r jsonb; e text; rid uuid := (select room from cls); begin
+  perform set_config('request.jwt.claim.sub','77777777-7777-7777-7777-777777777777',false); set role authenticated;
+  r := public.class_submit(rid, 0, '{1,2,3,4,5,6,7,8,9}', 3, '{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb, '{0,1}', '{+}');
+  reset role; perform pg_temp.check('a verified answer scores', (r->>'solved')::int = 1 and (r->>'score')::int = 10, r::text);
+  set role authenticated;
+  begin perform public.class_submit(rid, 0, '{1,2,3,4,5,6,7,8,9}', 3, '{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb, '{0,1}', '{+}'); e := null; exception when others then e := sqlerrm; end;
+  reset role; perform pg_temp.check('the same board cannot score twice', e like '%stale%', e);
+  set role authenticated;
+  begin perform public.class_submit(rid, 1, '{1,2,3,4,5,6,7,8,9}', 99, '{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb, '{0,1}', '{+}'); e := null; exception when others then e := sqlerrm; end;
+  reset role; perform pg_temp.check('a wrong answer does not score', e like '%does not reach%', e);
+  perform set_config('request.jwt.claim.sub','88888888-8888-8888-8888-888888888888',false); set role authenticated;
+  begin perform public.class_submit(rid, 0, '{9,9,9,9,9,9,9,9,9}', 18, '{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb, '{0,1}', '{+}'); e := null; exception when others then e := sqlerrm; end;
+  reset role; perform pg_temp.check('everyone must play the same board', e like '%does not match%', e);
+end $$;
+update public.class_rooms set ends_at = now() - interval '1 second' where id = (select room from cls);
+select pg_temp.blocked('answers after time is up are refused', format($q$select public.class_submit(%L,1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{4,1}','{-}')$q$, (select room from cls)), 'authenticated', '77777777-7777-7777-7777-777777777777');
+create temp table end_err as select pg_temp.run(format($q$select public.class_end(%L)$q$, (select room from cls)), 'authenticated', '66666666-6666-6666-6666-666666666666') as e;
+select pg_temp.check('host ends the game', (select e is null from end_err) and (select state = 'finished' from public.class_rooms where id = (select room from cls)), (select coalesce(e, 'state=' || (select state from public.class_rooms where id = (select room from cls))) from end_err));
+select pg_temp.check('no joining a finished game', pg_temp.join_as('99999999-9999-9999-9999-999999999999', (select code from cls), 'Leo') like '%finished%');
+select pg_temp.blocked('anon cannot create rooms', $q$select public.class_create_room('easy', 300)$q$, 'anon', null);
+select pg_temp.blocked('player calls internal_clean_nickname', $q$select public.internal_clean_nickname('Maya')$q$, 'authenticated', '77777777-7777-7777-7777-777777777777');

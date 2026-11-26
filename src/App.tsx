@@ -72,6 +72,11 @@ const MultiplayerSessionPage = lazy(() =>
 const MultiplayerJoinPage = lazy(() =>
   import('./components/UI/MultiplayerJoinPage').then((m) => ({ default: m.MultiplayerJoinPage }))
 );
+const classroom = () => import('./components/UI/ClassroomPages');
+const ClassHostSetupPage = lazy(() => classroom().then((m) => ({ default: m.ClassHostSetupPage })));
+const ClassHostRoomPage = lazy(() => classroom().then((m) => ({ default: m.ClassHostRoomPage })));
+const ClassJoinPage = lazy(() => classroom().then((m) => ({ default: m.ClassJoinPage })));
+const ClassPlayPage = lazy(() => classroom().then((m) => ({ default: m.ClassPlayPage })));
 const BuddiesPage = lazy(() =>
   import('./components/UI/BuddiesPage').then((m) => ({ default: m.BuddiesPage }))
 );
@@ -197,6 +202,11 @@ function App() {
                   <Route path="/play/join/:token" element={<MultiplayerJoinPage />} />
 
                   <Route path="/buddies" element={<BuddiesPage />} />
+                  <Route path="/class" element={<ClassHostSetupPage />} />
+                  <Route path="/class/host/:roomId" element={<ClassHostRoomPage />} />
+                  <Route path="/class/play/:roomId" element={<ClassPlayPage />} />
+                  <Route path="/join" element={<ClassJoinPage />} />
+                  <Route path="/join/:code" element={<ClassJoinPage />} />
                   <Route path="/privacy" element={<PrivacyPage />} />
                   <Route path="/terms" element={<TermsPage />} />
                   <Route path="/leaderboard/daily" element={<DailyLeaderboardPage />} />
