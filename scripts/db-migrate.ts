@@ -7,10 +7,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import postgres from 'postgres';
+import './loadEnv';
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.error('DATABASE_URL is required');
+  console.error('DATABASE_URL is required (set it in .env — see .env.example)');
   process.exit(1);
 }
 

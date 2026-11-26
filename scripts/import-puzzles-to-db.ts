@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import postgres from 'postgres';
+import './loadEnv';
 import type { Puzzle, PuzzleBundle } from '../src/types/game';
 import { pickTodaysDailyPuzzle, utcDateKey } from '../src/utils/puzzleStore';
 
@@ -17,7 +18,7 @@ const SCHEDULE_DAYS_AHEAD = 730;
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.error('DATABASE_URL is required');
+  console.error('DATABASE_URL is required (set it in .env — see .env.example)');
   process.exit(1);
 }
 

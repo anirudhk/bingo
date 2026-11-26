@@ -577,7 +577,8 @@ export const ClassPlayPage: React.FC = () => {
         gameMode="multiplayer"
         multiplayerSeed={boardSeed(room, index)}
         multiplayerRoundKey={`class-${room.id}-${index}`}
-        labelOverride={`Class race · #${myRank} of ${players.length} · ${me.score} pts`}
+        labelOverride={`Class race · #${myRank} of ${players.length}`}
+        scoreOverride={me.score}
         timerOverride={
           <span className="rounded-2xl bg-slate-900 px-3 py-1 font-mono text-lg font-black text-white">
             {clock(secsLeft ?? 0)}
