@@ -9,6 +9,7 @@ import { feedback } from '../../utils/feedback';
 import { buildDailyShareText, shareText, type ShareOutcome } from '../../utils/share';
 import { themesUnlockedBetween, type BoardTheme } from '../../constants/boardThemes';
 import { usePrefsStore } from '../../store/prefsStore';
+import { Mascot } from './Mascot';
 
 const formatTime = (milliseconds: number) => {
   const seconds = Math.floor(milliseconds / 1000);
@@ -129,8 +130,8 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
     return (
       <ResultShell>
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-lime-400 to-emerald-500 text-3xl font-black text-white shadow-xl">
-            ✓
+          <div className="mx-auto mb-1 flex justify-center">
+            <Mascot mood={stars === 3 ? 'cheer' : stars === 2 ? 'happy' : 'encourage'} size={88} />
           </div>
           <div className="text-[11px] font-black uppercase tracking-[0.2em] text-green-700">
             Level complete
@@ -211,8 +212,8 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
     return (
       <ResultShell>
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-lime-400 to-emerald-500 text-3xl shadow-xl">
-            {firstTry ? '⭐' : '🏆'}
+          <div className="mx-auto mb-1 flex justify-center">
+            <Mascot mood={firstTry ? 'cheer' : 'happy'} size={88} />
           </div>
           <div className="text-[11px] font-black uppercase tracking-[0.2em] text-green-700">
             Daily puzzle
@@ -321,14 +322,9 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
   return (
     <ResultShell>
       <div className="text-center">
-        <motion.div
-          initial={{ rotate: -8, scale: 0.8 }}
-          animate={{ rotate: 0, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 220 }}
-          className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-lime-400 to-emerald-500 text-3xl shadow-xl"
-        >
-          🏆
-        </motion.div>
+        <div className="mx-auto mb-1 flex justify-center">
+          <Mascot mood={percentage >= 75 ? 'cheer' : 'happy'} size={88} />
+        </div>
 
         <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
           Game complete!

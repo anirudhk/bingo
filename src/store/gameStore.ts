@@ -111,6 +111,7 @@ const createInitialState = (): GameState => ({
   currentLevelId: null,
   wrongAttempts: 0,
   hintsUsed: 0,
+  comboStreak: 0,
   gapOperators: null,
   roundSolved: false,
   currentPuzzleId: null,
@@ -224,6 +225,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -292,6 +294,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: levelId,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
       gapOperators: null,
       roundSolved: false,
       currentPuzzleId: null,
@@ -324,6 +327,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
       gapOperators: null,
       roundSolved: false,
       currentPuzzleId: puzzle.id,
@@ -371,6 +375,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
       gapOperators: gaps,
       roundSolved: false,
       currentPuzzleId: null,
@@ -395,6 +400,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = calculatePathResult(tiles, operators);
 
     if (result !== currentTarget) {
+      // A slip ends the combo.
+      set({ comboStreak: 0 });
       // Track wrong attempts for accuracy-based stars on the Learn path *and*
       // for the daily-puzzle result screen (so we can show "first try!" etc.).
       if (gameMode === 'learning' || gameMode === 'dailyPuzzle' || gameMode === 'multiplayer') {
@@ -408,7 +415,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const timeAttackMultiplier = gameMode === 'timeAttack' ? 2 : 1;
     const roundScore = Math.floor(baseScore * difficultyMultiplier * timeAttackMultiplier);
 
-    set((state) => ({ score: state.score + roundScore, roundSolved: true }));
+    set((state) => ({
+      score: state.score + roundScore,
+      roundSolved: true,
+      comboStreak: state.comboStreak + 1,
+    }));
 
     if (gameMode === 'timeAttack') {
       get().updateTimeAttack();
@@ -547,6 +558,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({
       score: Math.max(0, state.score - Math.max(0, penalty)),
       hintsUsed: state.hintsUsed + 1,
+      // A hinted answer doesn't extend the combo.
+      comboStreak: 0,
     }));
   },
 

@@ -12,6 +12,12 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Added — juice, combos and Gridy (2026-11-26)
+
+- **Gridy**, an original mascot (a living number tile with a screen face and a "+" antenna, pure SVG): cheers, smiles or encourages in the answer bar and on the completion screens.
+- **Combos**: correct answers in a row; 🔥 counter in the header from 2, "🔥 3 in a row!" with a brighter sound and haptic from 3. A wrong answer or a hint resets it.
+- **Tile feedback**: the correct path pops green, a wrong path shakes red.
+
 ### Changed — difficulty ladder and fitted board (2026-11-26)
 
 - **Each gap shows only some signs** (Play modes): Easy 3×3, 2 numbers, 1 sign per gap (+ − ×, auto-selected — tap two touching numbers); Medium 4×4, 2 numbers, 2 signs per gap; Hard 4×4, 3 numbers, 2 signs per gap, one answer per target. Quick Game and Learn levels are unchanged.

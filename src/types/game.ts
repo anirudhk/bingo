@@ -65,6 +65,8 @@ export interface GameState {
   wrongAttempts: number;
   /** Hints revealed this session — they cost stars like wrong answers. */
   hintsUsed: number;
+  /** Correct answers in a row this session; a wrong answer or a hint resets it. */
+  comboStreak: number;
   /** Signs shown in each gap on the current board (null = every sign everywhere). */
   gapOperators: GapOperators | null;
   /** Active static-puzzle id (only meaningful when gameMode === 'dailyPuzzle'). */

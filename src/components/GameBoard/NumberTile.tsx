@@ -29,6 +29,10 @@ interface NumberTileProps {
   size?: NumberTileSize;
   /** Exact tile size in px from the board's fit-to-screen layout (overrides `size`). */
   boxPx?: number;
+  /** Part of the correct answer: pops green. */
+  isSuccess?: boolean;
+  /** Part of a wrong answer: shakes red. */
+  isError?: boolean;
 }
 
 export const NumberTile: React.FC<NumberTileProps> = ({
@@ -41,6 +45,8 @@ export const NumberTile: React.FC<NumberTileProps> = ({
   isLegalNext = false,
   size = 'medium',
   boxPx,
+  isSuccess = false,
+  isError = false,
 }) => {
   const theme = useBoardTheme();
   // Width/height use min(viewport-based, fixed-cap) so dense boards fit on
@@ -70,6 +76,12 @@ export const NumberTile: React.FC<NumberTileProps> = ({
   `;
 
   const getStateClasses = () => {
+    if (isSuccess) {
+      return 'bg-gradient-to-br from-emerald-500 to-green-600 text-white border-emerald-600 shadow-xl ring-2 ring-emerald-300';
+    }
+    if (isError) {
+      return 'bg-gradient-to-br from-rose-500 to-red-500 text-white border-rose-600 shadow-lg ring-2 ring-rose-300';
+    }
     if (isInPath) {
       return `${theme.path} shadow-xl scale-105 ring-2`;
     }
@@ -96,15 +108,22 @@ export const NumberTile: React.FC<NumberTileProps> = ({
           : sizeStyles[size]
       }
       initial={{ scale: 1 }}
-      animate={{
-        scale: isInPath ? 1.05 : isSelected ? 1.02 : isInHint ? 1.03 : 1,
-        zIndex: isInPath ? 10 : isSelected ? 5 : isInHint ? 3 : 1,
-      }}
-      transition={{
-        type: 'spring',
-        stiffness: 300,
-        damping: 30,
-      }}
+      animate={
+        isSuccess
+          ? { scale: [1, 1.18, 1.05], zIndex: 10 }
+          : isError
+            ? { x: [0, -6, 6, -4, 4, 0], scale: 1.05, zIndex: 10 }
+            : {
+                x: 0,
+                scale: isInPath ? 1.05 : isSelected ? 1.02 : isInHint ? 1.03 : 1,
+                zIndex: isInPath ? 10 : isSelected ? 5 : isInHint ? 3 : 1,
+              }
+      }
+      transition={
+        isSuccess || isError
+          ? { duration: 0.45, ease: 'easeOut' }
+          : { type: 'spring', stiffness: 300, damping: 30 }
+      }
       whileTap={{ scale: 0.95 }}
     >
       {tile.value}
