@@ -51,6 +51,8 @@ interface ButtonGameBoardProps {
   onBack?: () => void;
   /** Replay a shared game exactly ("beat my time" link). */
   challengeSeed?: string;
+  /** Score to show in the header instead of this board's own (class race total). */
+  scoreOverride?: number;
 }
 
 export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
@@ -66,6 +68,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   timerOverride,
   onBack,
   challengeSeed,
+  scoreOverride,
 }) => {
   const navigate = useNavigate();
   const grid = useGameStore((s) => s.grid);
@@ -1052,7 +1055,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
             config.availableOperators,
             gapOperators ? config.signsPerGap : undefined
           )}
-          score={score}
+          score={scoreOverride ?? score}
           timer={
             timerOverride ??
             (gameMode === 'learning' ? undefined : gameMode === 'timeAttack' ? (
