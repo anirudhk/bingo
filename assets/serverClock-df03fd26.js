@@ -1,0 +1,1 @@
+async function a(r){const n=Date.now(),{data:e,error:s}=await r.rpc("rpc_server_now"),o=Date.now();if(s||e==null)return 0;const c=(n+o)/2,t=new Date(e).getTime();return Number.isNaN(t)?0:t-c}export{a as f};
