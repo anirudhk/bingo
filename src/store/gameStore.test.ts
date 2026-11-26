@@ -345,6 +345,7 @@ describe('init retry cap', () => {
     vi.resetModules();
     vi.doMock('../utils/gridGenerator', () => ({
       generateValidBoardFromConfig: () => ({ grid: [], gaps: null }),
+      generateValidGridFromConfigSeeded: () => null,
       getAllCombinationsFromConfig: () => [],
       generateTargetsFromConfig: () => [],
     }));
@@ -473,5 +474,30 @@ describe('combo streak', () => {
     useGameStore.getState().continueAfterSolve();
     useGameStore.getState().recordHint(5);
     expect(useGameStore.getState().comboStreak).toBe(0);
+  });
+});
+
+describe('seeded games (challenge links)', () => {
+  const snapshot = () => {
+    const s = useGameStore.getState();
+    return { grid: s.grid.map((t) => t.value), gaps: s.gapOperators, targets: s.targetNumbers };
+  };
+
+  it.each(['classic', 'quickGame'] as const)('the same seed replays the same %s game', (mode) => {
+    useGameStore.getState().initializeGame('hard', mode, 'seed42');
+    const a = snapshot();
+    expect(useGameStore.getState().gameSeed).toBe('seed42');
+    useGameStore.getState().initializeGame('hard', mode, 'seed42');
+    expect(snapshot()).toEqual(a);
+    useGameStore.getState().initializeGame('hard', mode, 'other7');
+    expect(snapshot()).not.toEqual(a);
+  });
+
+  it('every Classic game gets a shareable seed; Time Attack does not', () => {
+    useGameStore.getState().initializeGame('medium', 'classic');
+    expect(useGameStore.getState().gameSeed).toMatch(/^[a-z0-9]{8,}$/);
+    useGameStore.getState().initializeGame('medium', 'timeAttack');
+    expect(useGameStore.getState().gameSeed).toBeNull();
+    useGameStore.getState().cleanup();
   });
 });

@@ -280,3 +280,86 @@ describe('<ResultPage /> Number Buddies', () => {
     expect(screen.getByText('Star Kit')).toBeInTheDocument();
   });
 });
+
+describe('<ResultPage /> challenge links', () => {
+  const finishClassic = (totalTime: number) =>
+    act(() => {
+      useGameStore.setState({
+        gameMode: 'classic',
+        difficulty: 'hard',
+        gameSeed: 'seed42ab',
+        score: 100,
+        totalRounds: 5,
+        totalTime,
+        gameStatus: 'completed',
+      });
+    });
+
+  it('"Challenge a friend" shares a link that replays this game', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', { value: undefined, configurable: true });
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true });
+    finishClassic(42_000);
+    renderResult();
+    await user.click(screen.getByRole('button', { name: /challenge a friend/i }));
+    const text = writeText.mock.calls[0][0] as string;
+    expect(text).toMatch(/0:42/);
+    expect(text).toMatch(/\/challenge\/[A-Za-z0-9_-]+$/);
+  });
+
+  it("compares against the friend's time", () => {
+    finishClassic(38_000);
+    render(
+      <MemoryRouter>
+        <ResultPage
+          challenge={{
+            v: 1,
+            mode: 'classic',
+            difficulty: 'hard',
+            seed: 'seed42ab',
+            timeMs: 42_000,
+          }}
+          onRematch={() => {}}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('🎉 You won by 4.0 s!')).toBeInTheDocument();
+    expect(screen.getByText('0:38.0')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /rematch/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send it back/i })).toBeInTheDocument();
+  });
+});
+
+describe('<ResultPage /> close challenge results', () => {
+  it('never shows different times next to "tie"', () => {
+    act(() => {
+      useGameStore.setState({
+        gameMode: 'quickGame',
+        difficulty: 'easy',
+        gameSeed: 'seed42ab',
+        score: 50,
+        totalRounds: 5,
+        totalTime: 7_400,
+        gameStatus: 'completed',
+      });
+    });
+    render(
+      <MemoryRouter>
+        <ResultPage
+          challenge={{
+            v: 1,
+            mode: 'quickGame',
+            difficulty: 'easy',
+            seed: 'seed42ab',
+            timeMs: 7_600,
+          }}
+          onRematch={() => {}}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByText('0:07.4')).toBeInTheDocument();
+    expect(screen.getByText('0:07.6')).toBeInTheDocument();
+    expect(screen.getByText('🎉 You won by 0.2 s!')).toBeInTheDocument();
+  });
+});

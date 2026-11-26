@@ -135,8 +135,8 @@ Still open from the [2026-05-11 review](./REVIEW_2026-05-11.md), and still true 
 **Already done:** spoiler-free daily share text.
 
 - [ ] **P1 · S** **Share preview image.** Shared links show the 512 px app icon (`og:image`). Make a proper 1200×630 card image for the daily puzzle.
-- [ ] **P1 · M** **"Challenge a friend" links**: send the exact same board to someone. The seeded grids from multiplayer already make this possible without accounts.
-- [ ] **P1 · M** **Teacher class link**: one link gives a class the same puzzle set, no sign-in, with a simple results view. Teachers bring 30 kids each; this is the most realistic way to reach students.
+- [x] **P1 · M** **"Challenge a friend" links**: send the exact same board to someone. The seeded grids from multiplayer already make this possible without accounts. **Done 2026-11-26:** "Beat my time" links: Classic and Quick Game boards are seeded; the result screen shares a link that replays the same five boards and compares times (PR #9).
+- [x] **P1 · M** **Teacher class link**: one link gives a class the same puzzle set, no sign-in, with a simple results view. Teachers bring 30 kids each; this is the most realistic way to reach students. **Done 2026-11-26:** Class race: room code, guest students, projector leaderboard (PR #8).
 - [ ] **P2 · S** Search engine basics: `robots.txt`, `sitemap.xml`, a landing section that explains the game to parents.
 - [ ] **P2 · S** Press kit: logo, screenshots, colour palette (EPIC-51.01).
 - [ ] **P2 · M** Translations: English plus 2 languages (EPIC-49). Worth doing before outreach to schools outside English-speaking countries.

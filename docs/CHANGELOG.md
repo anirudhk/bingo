@@ -12,6 +12,11 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Added — "Beat my time" links (2026-11-26)
+
+- **Challenge a friend** after a Classic or Quick Game: the link carries the mode, difficulty, board seed and your time (no server, no account). Opening it shows "A friend did this in 0:42", replays the identical five boards, and compares times to a tenth of a second, with Rematch and "Send it back with your time".
+- Classic and Quick Game boards are now generated from a seed (`gameSeed`); gameplay is unchanged.
+
 ### Added — Class race (2026-11-26)
 
 - **Live classroom mode.** A teacher creates a room (`/class`: difficulty + 3/5/10 minutes) and gets a 6-letter code; students join at `/join` with a nickname as guests (no accounts). Everyone races the same sequence of seeded boards; the projector view shows who joined, a countdown, a live top-10 leaderboard and a final podium.

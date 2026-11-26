@@ -7,6 +7,7 @@ import { LEVELS, UNITS, getLevel, getNextLevelId } from '../../constants/levels'
 import type { DailyGuessResult } from '../../services/dailyLeaderboardCloud';
 import { feedback } from '../../utils/feedback';
 import { buildDailyShareText, shareText, type ShareOutcome } from '../../utils/share';
+import { challengeShareText, type Challenge } from '../../utils/challenge';
 import { themesUnlockedBetween, type BoardTheme } from '../../constants/boardThemes';
 import { usePrefsStore } from '../../store/prefsStore';
 import { Mascot } from './Mascot';
@@ -40,9 +41,17 @@ const StarRow: React.FC<{ stars: 0 | 1 | 2 | 3 }> = ({ stars }) => (
 interface ResultPageProps {
   /** Daily only: the server's verdict for signed-in players (official time, streak, rating). */
   dailyCloudResult?: DailyGuessResult | null;
+  /** Playing a friend's "beat my time" link: compare against their time. */
+  challenge?: Challenge;
+  /** Replay the challenge boards from the start. */
+  onRematch?: () => void;
 }
 
-export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
+export const ResultPage: React.FC<ResultPageProps> = ({
+  dailyCloudResult,
+  challenge,
+  onRematch,
+}) => {
   const navigate = useNavigate();
   const score = useGameStore((s) => s.score);
   const totalTime = useGameStore((s) => s.totalTime);
@@ -55,6 +64,8 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
   const hintsUsed = useGameStore((s) => s.hintsUsed);
   const timeAttackRoundsCompleted = useGameStore((s) => s.timeAttackRoundsCompleted);
   const resetGame = useGameStore((s) => s.resetGame);
+  const gameSeed = useGameStore((s) => s.gameSeed);
+  const [challengeShare, setChallengeShare] = useState<ShareOutcome | null>(null);
   const completeLevel = useProgressStore((s) => s.completeLevel);
   const completeDailyPuzzle = useProgressStore((s) => s.completeDailyPuzzle);
   const recordPlayModeBests = useProgressStore((s) => s.recordPlayModeBests);
@@ -373,18 +384,60 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
           </div>
         )}
 
+        {challenge && <ChallengeComparison myMs={totalTime} theirMs={challenge.timeMs} />}
+
         <div className="mt-6 space-y-2">
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              resetGame();
-              navigate('/game');
-            }}
-            className="w-full rounded-2xl bg-green-700 px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
-          >
-            Play Again
-          </motion.button>
+          {challenge ? (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onRematch?.()}
+              className="w-full rounded-2xl bg-green-700 px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
+            >
+              Rematch
+            </motion.button>
+          ) : (
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                resetGame();
+                navigate('/game');
+              }}
+              className="w-full rounded-2xl bg-green-700 px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
+            >
+              Play Again
+            </motion.button>
+          )}
+
+          {gameSeed && (gameMode === 'classic' || gameMode === 'quickGame') && (
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={async () => {
+                const outcome = await shareText(
+                  challengeShareText({
+                    v: 1,
+                    mode: gameMode,
+                    difficulty,
+                    seed: gameSeed,
+                    timeMs: totalTime,
+                  })
+                );
+                setChallengeShare(outcome);
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-4 py-2.5 text-sm font-black text-white hover:bg-sky-700"
+              aria-live="polite"
+            >
+              {challengeShare === 'copied'
+                ? 'Link copied! Send it to a friend'
+                : challengeShare === 'shared'
+                  ? 'Challenge sent!'
+                  : challenge
+                    ? 'Send it back with your time'
+                    : 'Challenge a friend'}
+            </motion.button>
+          )}
 
           <motion.button
             whileHover={{ scale: 1.03 }}
@@ -491,3 +544,51 @@ const BuddyUnlockedBanner: React.FC<{ buddy: BuddyDef }> = ({ buddy }) => (
     </Link>
   </motion.div>
 );
+
+/** Times with tenths, so the shown numbers always agree with the verdict. */
+const preciseClock = (ms: number) => {
+  const tenths = Math.round(ms / 100);
+  const secs = Math.floor(tenths / 10);
+  return `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}.${tenths % 10}`;
+};
+
+/** "You 0:38.2 · Friend 0:42.0 — you won by 3.8 s!" */
+const ChallengeComparison: React.FC<{ myMs: number; theirMs: number }> = ({ myMs, theirMs }) => {
+  const diffTenths = Math.round(theirMs / 100) - Math.round(myMs / 100);
+  const won = diffTenths > 0;
+  const gap = `${(Math.abs(diffTenths) / 10).toFixed(1)} s`;
+  return (
+    <div
+      className={`mt-4 rounded-2xl p-3 ring-1 ${
+        won
+          ? 'bg-emerald-50 ring-emerald-200 dark:bg-emerald-950/40 dark:ring-emerald-900'
+          : 'bg-sky-50 ring-sky-200 dark:bg-sky-950/40 dark:ring-sky-900'
+      }`}
+      role="status"
+    >
+      <div className="flex justify-around text-center">
+        <div>
+          <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">You</div>
+          <div className="text-2xl font-black tabular-nums text-slate-900 dark:text-white">
+            {preciseClock(myMs)}
+          </div>
+        </div>
+        <div>
+          <div className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+            Friend
+          </div>
+          <div className="text-2xl font-black tabular-nums text-slate-900 dark:text-white">
+            {preciseClock(theirMs)}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 text-center text-sm font-bold text-slate-800 dark:text-slate-100">
+        {won
+          ? `🎉 You won by ${gap}!`
+          : diffTenths === 0
+            ? "It's a tie!"
+            : `${gap} slower — have another go!`}
+      </p>
+    </div>
+  );
+};

@@ -67,6 +67,8 @@ export interface GameState {
   hintsUsed: number;
   /** Correct answers in a row this session; a wrong answer or a hint resets it. */
   comboStreak: number;
+  /** Seed of the current Classic / Quick Game board (shareable); null otherwise. */
+  gameSeed: string | null;
   /** Signs shown in each gap on the current board (null = every sign everywhere). */
   gapOperators: GapOperators | null;
   /** Active static-puzzle id (only meaningful when gameMode === 'dailyPuzzle'). */
