@@ -5,7 +5,7 @@ import type { DifficultyConfig } from '../types/game';
  * `signsPerGap` of the signs (picked at random per board), so the puzzle is
  * spotting where numbers and signs line up — and the sign buttons get big
  * enough to tap.
- *   Easy:   2 numbers, 1 sign per gap (auto-selected — just tap two numbers)
+ *   Easy:   2 numbers, 1 sign per gap (the player still taps it: number → sign → number)
  *   Medium: 2 numbers, 2 signs per gap
  *   Hard:   3 numbers, 2 signs per gap, every target has exactly one answer
  */

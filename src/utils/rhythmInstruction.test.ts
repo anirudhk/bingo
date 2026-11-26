@@ -9,12 +9,14 @@ describe('rhythmInstruction', () => {
     );
   });
 
-  it('Easy (one sign per gap) asks for two touching numbers only', () => {
-    expect(rhythmInstruction(2, ['+', '-', '*'], 1)).toMatch(/^Tap two numbers that touch/);
+  it('Easy (one sign per gap) still asks for the sign tap', () => {
+    expect(rhythmInstruction(2, ['+', '-', '*'], 1)).toBe(
+      'Tap a number, the sign next to it, then the number on the other side.'
+    );
   });
 
   it('keeps the first lessons simple', () => {
-    expect(rhythmInstruction(2, ['+'])).toBe('Tap a number, a sign, then a number next to it.');
+    expect(rhythmInstruction(2, ['+'])).toMatch(/^Tap a number, pick one of the signs/);
   });
 
   it('only explains left-to-right order once × can be in a 3-number path', () => {

@@ -403,28 +403,6 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     const isNumberTurn = totalSelections % 2 === 0; // 0, 2, 4, etc. are number turns
 
     if (!isNumberTurn) {
-      // A gap with a single sign needs no choice: tapping the neighbouring
-      // tile picks that sign automatically (Easy: just tap two numbers).
-      const last = selectedTiles[selectedTiles.length - 1];
-      const gap = last ? gapBetween(last.position, tile.position) : null;
-      const signs = gap ? signsForGap(gapOperators, config, gap.key) : [];
-      if (gap && signs.length === 1 && isOperatorAvailable(gap.row, gap.col, gap.position)) {
-        const operator = signs[0];
-        const newOperators = [...selectedOperators, operator];
-        const newPositions = [
-          ...selectedOperatorPositions,
-          { row: gap.row, col: gap.col, position: gap.position, operator },
-        ];
-        const newTiles = [...selectedTiles, tile];
-        setSelectedOperators(newOperators);
-        setSelectedOperatorPositions(newPositions);
-        setSelectedTiles(newTiles);
-        const completes =
-          newTiles.length === config.tilesCount && newOperators.length === config.operatorsCount;
-        if (completes) checkAnswer(newTiles, newOperators);
-        else feedback('tap');
-        return;
-      }
       // It's not a number's turn, vibrate and don't select
       feedback('invalid');
       return;

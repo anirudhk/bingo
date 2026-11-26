@@ -9,9 +9,10 @@ export const rhythmInstruction = (
   signsPerGap?: number
 ): string => {
   if (pathTiles <= 2 && signsPerGap === 1) {
-    return 'Tap two numbers that touch — the sign between them does the maths.';
+    return 'Tap a number, the sign next to it, then the number on the other side.';
   }
-  if (pathTiles <= 2) return 'Tap a number, a sign, then a number next to it.';
+  if (pathTiles <= 2)
+    return 'Tap a number, pick one of the signs next to it, then the number on the other side.';
   const words: Record<number, string> = { 3: 'three', 4: 'four', 5: 'five' };
   const n = words[pathTiles] ?? String(pathTiles);
   const rhythm = Array.from({ length: pathTiles }, () => 'number').join(', sign, ');
