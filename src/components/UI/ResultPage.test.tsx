@@ -179,8 +179,8 @@ describe('<ResultPage /> rewards & sharing', () => {
       });
     });
     renderResult();
-    expect(screen.getByText(/new board theme unlocked/i)).toBeInTheDocument();
-    expect(screen.getByText('Ocean')).toBeInTheDocument();
+    expect(screen.getByText(/Ocean board/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /use it/i })).toBeInTheDocument();
   });
 
   it('replaying with no star improvement says so instead of claiming XP', () => {
@@ -262,7 +262,7 @@ describe('<ResultPage /> star guidance', () => {
 });
 
 describe('<ResultPage /> Number Buddies', () => {
-  it('announces buddies earned by this level', () => {
+  it('announces everything this level unlocked in one card', () => {
     act(() => {
       useGameStore.setState({
         gameMode: 'learning',
@@ -275,9 +275,14 @@ describe('<ResultPage /> Number Buddies', () => {
       });
     });
     renderResult();
-    expect(screen.getAllByText(/new buddy unlocked/i)).toHaveLength(2);
+    // First level, 3 stars: Sprout plus the Ocean theme — one card, not a stack.
+    expect(
+      screen.getAllByRole('status').filter((el) => /new buddy/i.test(el.textContent ?? ''))
+    ).toHaveLength(1);
+    expect(screen.getByText('New buddy!')).toBeInTheDocument();
     expect(screen.getByText('Sprout')).toBeInTheDocument();
-    expect(screen.getByText('Star Kit')).toBeInTheDocument();
+    expect(screen.queryByText('Star Kit')).not.toBeInTheDocument();
+    expect(screen.getByText(/Ocean board/)).toBeInTheDocument();
   });
 });
 

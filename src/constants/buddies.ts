@@ -49,7 +49,7 @@ export const BUDDIES: BuddyDef[] = [
     outline: '#a16207',
     emblem: '★',
     topper: 'star',
-    goal: 'Get 3 stars on any level',
+    goal: 'Get 3 stars on 3 levels',
   },
   {
     id: 'plus-pup',
@@ -101,9 +101,9 @@ export const BUDDIES: BuddyDef[] = [
     name: 'Blaze',
     color: '#fb923c',
     outline: '#9a3412',
-    emblem: '5',
+    emblem: '10',
     topper: 'flame',
-    goal: 'Get 5 correct answers in a row',
+    goal: 'Get 10 correct answers in a row',
   },
   {
     id: 'sunny',
@@ -168,13 +168,13 @@ export const earnedBuddyIds = (p: BuddyProgress): string[] => {
   const dailyResults = Object.values(p.daily);
   const rules: Record<string, boolean> = {
     sprout: levelValues.some((l) => l.completed),
-    'star-kit': levelValues.some((l) => l.bestStars === 3),
+    'star-kit': levelValues.filter((l) => l.bestStars === 3).length >= 3,
     'plus-pup': unitComplete(UNITS[0].id, p.levels),
     'minus-mouse': unitComplete(UNITS[1].id, p.levels),
     'mix-fox': unitComplete(UNITS[2].id, p.levels),
     'times-dragon': unitComplete(UNITS[3].id, p.levels),
     'grid-owl': unitComplete(UNITS[4].id, p.levels),
-    blaze: (p.bestCombo ?? 0) >= 5,
+    blaze: (p.bestCombo ?? 0) >= 10,
     sunny: dailyResults.length > 0,
     bullseye: dailyResults.some((d) => d.wrongAttempts === 0),
     'calendar-cat': p.dailyStreak.count >= 3,

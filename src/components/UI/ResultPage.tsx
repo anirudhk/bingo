@@ -187,12 +187,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
             {xpGained === 0 ? 'Best stars already earned' : `+${xpGained ?? stars * 10} XP`}
           </motion.div>
 
-          {newBuddies.map((buddy) => (
-            <BuddyUnlockedBanner key={buddy.id} buddy={buddy} />
-          ))}
-          {unlockedThemes.map((theme) => (
-            <ThemeUnlockedBanner key={theme.id} theme={theme} />
-          ))}
+          <RewardsCard buddies={newBuddies} themes={unlockedThemes} />
 
           <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
             <Stat label="Time" value={formatTime(totalTime)} />
@@ -254,6 +249,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
           <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">
             Come back tomorrow for a new one.
           </p>
+          <RewardsCard buddies={newBuddies} themes={[]} />
           <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
             <Stat label="Time" value={formatTime(totalTime)} />
             <Stat label="Wrong taps" value={String(wrongAttempts)} />
@@ -360,6 +356,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({
           Game complete!
         </h1>
         <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">{message}</p>
+        <RewardsCard buddies={newBuddies} themes={[]} />
 
         <div className="mt-5 grid grid-cols-2 gap-3 text-xs">
           <Stat label="Score" value={String(score)} />
@@ -482,68 +479,89 @@ const Stat: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   </div>
 );
 
-/** Shown when finishing a level pushes XP past a board-theme threshold. */
-const ThemeUnlockedBanner: React.FC<{ theme: BoardTheme }> = ({ theme }) => {
+/**
+ * Everything this game unlocked, in one compact card: new buddies side by
+ * side, then any new board theme as a single row. Keeps the stats and the
+ * Continue button on screen even when several things unlock at once.
+ */
+const RewardsCard: React.FC<{ buddies: BuddyDef[]; themes: BoardTheme[] }> = ({
+  buddies,
+  themes,
+}) => {
   const boardTheme = usePrefsStore((s) => s.boardTheme);
   const setBoardTheme = usePrefsStore((s) => s.setBoardTheme);
-  const active = boardTheme === theme.id;
+  const count = buddies.length + themes.length;
+  if (count === 0) return null;
+  const theme = themes[themes.length - 1];
+  const heading =
+    buddies.length === 0
+      ? 'New board theme!'
+      : buddies.length === 1
+        ? 'New buddy!'
+        : `${buddies.length} new buddies!`;
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9, y: 8 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       transition={{ delay: 1.1, type: 'spring', stiffness: 260, damping: 20 }}
-      className="mt-4 flex items-center gap-3 rounded-2xl bg-amber-50 p-3 text-left ring-1 ring-amber-200 dark:bg-amber-950/40 dark:ring-amber-900"
+      className="mt-4 rounded-2xl bg-orange-50 p-3 text-left ring-1 ring-orange-200 dark:bg-orange-950/40 dark:ring-orange-900"
       role="status"
     >
-      <span
-        className="h-11 w-11 shrink-0 rounded-xl shadow-sm ring-1 ring-black/5"
-        style={{ background: theme.swatch }}
-        aria-hidden
-      />
-      <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-          New board theme unlocked
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px] font-black uppercase tracking-wider text-orange-800 dark:text-orange-300">
+          {heading}
         </span>
-        <span className="block text-base font-bold text-slate-900 dark:text-white">
-          {theme.name}
-        </span>
-      </span>
-      <button
-        type="button"
-        onClick={() => setBoardTheme(theme.id)}
-        disabled={active}
-        className="shrink-0 rounded-xl bg-amber-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 disabled:bg-emerald-500"
-      >
-        {active ? 'In use ✓' : 'Use it'}
-      </button>
+        {buddies.length > 0 && (
+          <Link
+            to="/buddies"
+            className="inline-flex min-h-[44px] items-center rounded-xl px-2 text-sm font-bold text-orange-700 underline-offset-2 hover:underline dark:text-orange-300"
+          >
+            See all →
+          </Link>
+        )}
+      </div>
+      {buddies.length > 0 && (
+        <div className="mt-1 flex flex-wrap justify-center gap-x-4 gap-y-2">
+          {buddies.map((buddy) => (
+            <div key={buddy.id} className="flex w-20 flex-col items-center text-center">
+              <Buddy buddy={buddy} size={48} />
+              <span className="mt-1 text-xs font-bold leading-tight text-slate-900 dark:text-white">
+                {buddy.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      {theme && (
+        <div
+          className={`flex items-center gap-3 ${buddies.length > 0 ? 'mt-3 border-t border-orange-200 pt-3 dark:border-orange-900' : 'mt-1'}`}
+        >
+          <span
+            className="h-9 w-9 shrink-0 rounded-lg shadow-sm ring-1 ring-black/5"
+            style={{ background: theme.swatch }}
+            aria-hidden
+          />
+          <span className="min-w-0 flex-1 text-sm font-bold text-slate-900 dark:text-white">
+            {theme.name} board
+            {buddies.length > 0 && (
+              <span className="block text-xs font-semibold text-slate-500 dark:text-slate-400">
+                New theme
+              </span>
+            )}
+          </span>
+          <button
+            type="button"
+            onClick={() => setBoardTheme(theme.id)}
+            disabled={boardTheme === theme.id}
+            className="min-h-[44px] shrink-0 rounded-xl bg-amber-500 px-3 text-sm font-semibold text-white shadow-sm hover:bg-amber-600 disabled:bg-emerald-600"
+          >
+            {boardTheme === theme.id ? 'In use ✓' : 'Use it'}
+          </button>
+        </div>
+      )}
     </motion.div>
   );
 };
-
-/** Shown when this game unlocked a Number Buddy. */
-const BuddyUnlockedBanner: React.FC<{ buddy: BuddyDef }> = ({ buddy }) => (
-  <motion.div
-    initial={{ opacity: 0, scale: 0.9, y: 8 }}
-    animate={{ opacity: 1, scale: 1, y: 0 }}
-    transition={{ delay: 1.1, type: 'spring', stiffness: 260, damping: 20 }}
-    className="mt-4 flex items-center gap-3 rounded-2xl bg-orange-50 p-3 text-left ring-1 ring-orange-200 dark:bg-orange-950/40 dark:ring-orange-900"
-    role="status"
-  >
-    <Buddy buddy={buddy} size={52} />
-    <span className="min-w-0 flex-1">
-      <span className="block text-[11px] font-semibold uppercase tracking-wider text-orange-800 dark:text-orange-300">
-        New buddy unlocked
-      </span>
-      <span className="block text-base font-bold text-slate-900 dark:text-white">{buddy.name}</span>
-    </span>
-    <Link
-      to="/buddies"
-      className="shrink-0 rounded-xl bg-orange-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
-    >
-      See all
-    </Link>
-  </motion.div>
-);
 
 /** Times with tenths, so the shown numbers always agree with the verdict. */
 const preciseClock = (ms: number) => {
