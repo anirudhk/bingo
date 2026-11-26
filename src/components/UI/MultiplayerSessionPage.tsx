@@ -120,7 +120,7 @@ export const MultiplayerSessionPage: React.FC = () => {
         if (!path) return;
         // Send the board we were shown plus our answer; the server checks the
         // answer, requires both players' boards to match and times the round.
-        const { grid, currentTarget } = useGameStore.getState();
+        const { grid, currentTarget, gapOperators } = useGameStore.getState();
         const gridValues = [...grid].sort((a, b) => a.id - b.id).map((t) => t.value);
         const hash = await timingFingerprint([
           session.id,
@@ -133,6 +133,7 @@ export const MultiplayerSessionPage: React.FC = () => {
           p_round: session.current_round,
           p_grid: gridValues,
           p_target: currentTarget,
+          p_gaps: gapOperators,
           p_tile_ids: path.tileIds,
           p_operators: path.operators,
           p_wrong: wrongAttempts,

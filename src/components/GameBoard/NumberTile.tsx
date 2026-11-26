@@ -27,6 +27,8 @@ interface NumberTileProps {
   /** Highlights tiles you can tap next (straight-line rule). */
   isLegalNext?: boolean;
   size?: NumberTileSize;
+  /** Exact tile size in px from the board's fit-to-screen layout (overrides `size`). */
+  boxPx?: number;
 }
 
 export const NumberTile: React.FC<NumberTileProps> = ({
@@ -38,6 +40,7 @@ export const NumberTile: React.FC<NumberTileProps> = ({
   hintPathIndex,
   isLegalNext = false,
   size = 'medium',
+  boxPx,
 }) => {
   const theme = useBoardTheme();
   // Width/height use min(viewport-based, fixed-cap) so dense boards fit on
@@ -87,7 +90,11 @@ export const NumberTile: React.FC<NumberTileProps> = ({
     <motion.div
       data-tile-id={tile.id}
       className={`${baseClasses} ${getStateClasses()}`}
-      style={sizeStyles[size]}
+      style={
+        boxPx
+          ? { width: boxPx, height: boxPx, fontSize: Math.round(boxPx * 0.42) }
+          : sizeStyles[size]
+      }
       initial={{ scale: 1 }}
       animate={{
         scale: isInPath ? 1.05 : isSelected ? 1.02 : isInHint ? 1.03 : 1,

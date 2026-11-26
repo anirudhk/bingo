@@ -1,20 +1,31 @@
 import type { DifficultyConfig } from '../types/game';
 
+/**
+ * Play-mode difficulty ladder. Each gap between two tiles shows only
+ * `signsPerGap` of the signs (picked at random per board), so the puzzle is
+ * spotting where numbers and signs line up — and the sign buttons get big
+ * enough to tap.
+ *   Easy:   2 numbers, 1 sign per gap (auto-selected — just tap two numbers)
+ *   Medium: 2 numbers, 2 signs per gap
+ *   Hard:   3 numbers, 2 signs per gap, every target has exactly one answer
+ */
 export const DIFFICULTY_CONFIGS: Record<string, DifficultyConfig> = {
   easy: {
     gridSize: 3,
     tilesCount: 2,
     operatorsCount: 1,
-    availableOperators: ['+', '-'],
-    targetRange: { min: 1, max: 20 },
+    availableOperators: ['+', '-', '*'],
+    signsPerGap: 1,
+    targetRange: { min: 1, max: 50 },
     totalRounds: 5,
   },
   medium: {
     gridSize: 4,
-    tilesCount: 3,
-    operatorsCount: 2,
+    tilesCount: 2,
+    operatorsCount: 1,
     availableOperators: ['+', '-', '*'],
-    targetRange: { min: 1, max: 35 },
+    signsPerGap: 2,
+    targetRange: { min: 1, max: 60 },
     totalRounds: 5,
   },
   hard: {
@@ -22,13 +33,28 @@ export const DIFFICULTY_CONFIGS: Record<string, DifficultyConfig> = {
     tilesCount: 3,
     operatorsCount: 2,
     availableOperators: ['+', '-', '*'],
-    targetRange: { min: 1, max: 50 },
+    signsPerGap: 2,
+    targetRange: { min: 1, max: 60 },
     totalRounds: 5,
-    // What makes Hard hard: every target has exactly one solving path
-    // (feasible on ~99% of grids; falls back to the fewest-solution targets).
+    // Every target has exactly one solving path (falls back to the
+    // fewest-solution targets when a board can't supply enough).
     maxSolutionsPerTarget: 1,
   },
 };
+
+/** Quick Game keeps its original shape: 3×3, 2 numbers, + and − in every gap. */
+export const QUICK_GAME_CONFIG: DifficultyConfig = {
+  gridSize: 3,
+  tilesCount: 2,
+  operatorsCount: 1,
+  availableOperators: ['+', '-'],
+  targetRange: { min: 1, max: 20 },
+  totalRounds: 5,
+};
+
+/** The board config for a Play mode (Quick Game has its own fixed shape). */
+export const getPlayConfig = (gameMode: string, difficulty: string): DifficultyConfig =>
+  gameMode === 'quickGame' ? QUICK_GAME_CONFIG : DIFFICULTY_CONFIGS[difficulty];
 
 export const OPERATORS = {
   ADDITION: '+',

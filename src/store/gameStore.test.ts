@@ -344,9 +344,9 @@ describe('init retry cap', () => {
     // Patch the gridGenerator module so generateTargets always returns [].
     vi.resetModules();
     vi.doMock('../utils/gridGenerator', () => ({
-      generateValidGrid: () => [],
-      getAllCombinations: () => [],
-      generateTargets: () => [],
+      generateValidBoardFromConfig: () => ({ grid: [], gaps: null }),
+      getAllCombinationsFromConfig: () => [],
+      generateTargetsFromConfig: () => [],
     }));
 
     const { useGameStore: freshStore } = await import('./gameStore');
@@ -417,5 +417,31 @@ describe('hints and hidden tabs', () => {
     vi.advanceTimersByTime(61_000);
     expect(useGameStore.getState().gameStatus).toBe('completed');
     useGameStore.getState().setPageHidden(false);
+  });
+});
+
+describe('difficulty ladder in the store', () => {
+  it('easy boards carry one sign per gap', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    const gaps = useGameStore.getState().gapOperators!;
+    expect(Object.values(gaps).every((signs) => signs.length === 1)).toBe(true);
+  });
+
+  it('Quick Game is unchanged: 3×3, + and − in every gap', () => {
+    useGameStore.getState().initializeGame('easy', 'quickGame');
+    const s = useGameStore.getState();
+    expect(s.gapOperators).toBeNull();
+    expect(s.grid).toHaveLength(9);
+    expect(s.difficulty).toBe('easy');
+  });
+
+  it('Time Attack rounds get fresh gap signs with each new board', () => {
+    useGameStore.getState().initializeGame('medium', 'timeAttack');
+    const first = useGameStore.getState().gapOperators;
+    expect(first).not.toBeNull();
+    useGameStore.setState({ roundSolved: true });
+    useGameStore.getState().nextRound();
+    expect(useGameStore.getState().gapOperators).not.toBe(first);
+    useGameStore.getState().cleanup();
   });
 });

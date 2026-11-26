@@ -42,7 +42,7 @@ select pg_temp.blocked('insert own daily_attempts row', $q$insert into public.da
 select pg_temp.blocked('insert mp_round_submissions directly', $q$insert into public.mp_round_submissions(session_id,round_number,user_id,solve_time_ms) values (gen_random_uuid(),1,'11111111-1111-1111-1111-111111111111',1)$q$, 'authenticated', :'A');
 select pg_temp.blocked('anon reads client_errors', $q$select 1/count(*) from public.client_errors$q$, 'anon', null);
 select pg_temp.blocked('anon calls start_daily_attempt', $q$select public.start_daily_attempt()$q$, 'anon', null);
-select pg_temp.blocked('anon calls mp_submit_round', $q$select public.mp_submit_round(gen_random_uuid(),1,'{}',1,'{}','{}',0,'')$q$, 'anon', null);
+select pg_temp.blocked('anon calls mp_submit_round', $q$select public.mp_submit_round(gen_random_uuid(),1,'{}',1,null,'{}','{}',0,'')$q$, 'anon', null);
 select pg_temp.blocked('set_parent_email (removed)', $q$select public.set_parent_email('x@y.z')$q$, 'authenticated', :'A');
 -- Every new internal helper must be off-limits to API roles.
 select pg_temp.blocked('anon calls internal_mp_finish', $q$select public.internal_mp_finish(gen_random_uuid(), null)$q$, 'anon', null);
@@ -116,27 +116,27 @@ values
  ('aaaaaaaa-0000-0000-0000-000000000003','t3',:'A',:'B','active','easy',3,1, now() - interval '5 seconds', now(), now() - interval '2 minutes');
 do $$ declare r jsonb; e text; begin
   perform set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false); set role authenticated;
-  begin perform public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{0,1}','{-}',0,''); e := null; exception when others then e := sqlerrm; end;
+  begin perform public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{-}',0,''); e := null; exception when others then e := sqlerrm; end;
   reset role; perform pg_temp.check('wrong answer rejected', e like '%does not reach%', e);
   set role authenticated;
-  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{0,1}','{+}',0,'');
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{+}',0,'');
   reset role; perform pg_temp.check('valid answer accepted; time from server (~5s)', (r->>'solve_ms')::int between 4900 and 7000, r::text);
   set role authenticated;
-  begin perform public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{0,1}','{+}',0,''); e := null; exception when others then e := sqlerrm; end;
+  begin perform public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{+}',0,''); e := null; exception when others then e := sqlerrm; end;
   reset role; perform pg_temp.check('resubmitting the same round rejected', e like '%already submitted%', e);
 end $$;
 select pg_sleep(0.2);
 do $$ declare r jsonb; begin
   perform set_config('request.jwt.claim.sub','22222222-2222-2222-2222-222222222222',false); set role authenticated;
-  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{4,1}','{-}',0,'');
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000001',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{4,1}','{-}',0,'');
   reset role; perform pg_temp.check('second player completes the match', (r->>'finished')::boolean, r::text);
 end $$;
 select pg_temp.check('faster player (A) wins, ratings move', (select state = 'finished' and winner_user_id = '11111111-1111-1111-1111-111111111111' from public.mp_sessions where invite_token = 't1') and (select count(*) = 2 from public.user_ratings where mode = 'multiplayer'));
 do $$ declare r jsonb; begin
   perform set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false); set role authenticated;
-  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000002',1,'{1,2,3,4,5,6,7,8,9}',3,'{0,1}','{+}',0,'');
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000002',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{+}',0,'');
   perform set_config('request.jwt.claim.sub','22222222-2222-2222-2222-222222222222',false);
-  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000002',1,'{9,9,9,9,9,9,9,9,9}',18,'{0,1}','{+}',0,'');
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000002',1,'{9,9,9,9,9,9,9,9,9}',18,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{+}',0,'');
   reset role; perform pg_temp.check('mismatched grid voids the match', (r->>'voided')::boolean and (select state = 'finished' and winner_user_id is null from public.mp_sessions where invite_token = 't2'), r::text);
 end $$;
 do $$ declare ok boolean; begin
@@ -169,13 +169,13 @@ insert into public.mp_sessions(id, invite_token, host_id, guest_id, state, diffi
 values ('aaaaaaaa-0000-0000-0000-000000000004','t4',:'A','44444444-4444-4444-4444-444444444444','active','easy',1,1, now() - interval '5 seconds', now(), now());
 do $$ declare r jsonb; begin
   perform set_config('request.jwt.claim.sub','44444444-4444-4444-4444-444444444444',false); set role authenticated;
-  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000004',1,'{1,2,3,4,5,6,7,8,9}',3,'{0,1}','{+}',0,'');
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000004',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{+}',0,'');
   reset role; perform pg_temp.check('guest can play a verified round', (r->>'waiting_for_opponent')::boolean, r::text);
 end $$;
 select pg_sleep(0.2);
 do $$ declare r jsonb; begin
   perform set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false); set role authenticated;
-  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000004',1,'{1,2,3,4,5,6,7,8,9}',3,'{4,1}','{-}',0,'');
+  r := public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000004',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{4,1}','{-}',0,'');
   reset role; perform pg_temp.check('match with a guest finishes', (r->>'finished')::boolean, r::text);
 end $$;
 select pg_temp.check('match with a guest has a winner but is unrated',
@@ -185,3 +185,22 @@ create temp table guest_purge as select public.purge_deleted_accounts() as n;
 select pg_temp.check('purge removes guests idle 30+ days, keeps active ones',
   not exists (select 1 from auth.users where id = '55555555-5555-5555-5555-555555555555')
   and exists (select 1 from auth.users where id = '44444444-4444-4444-4444-444444444444'));
+
+-- ─── Sign slots: each gap shows only some signs ───
+insert into public.mp_sessions(id, invite_token, host_id, guest_id, state, difficulty, total_rounds, current_round, round_started_at, host_last_seen, guest_last_seen)
+values ('aaaaaaaa-0000-0000-0000-000000000005','t5',:'A',:'B','active','easy',1,1, now() - interval '5 seconds', now(), now());
+do $$ declare e text; begin
+  perform set_config('request.jwt.claim.sub','11111111-1111-1111-1111-111111111111',false); set role authenticated;
+  -- 2 × 1 = 2 would need × in gap h:0:0, which shows only +.
+  begin perform public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000005',1,'{2,1,3,4,5,6,7,8,9}',2,'{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb,'{0,1}','{*}',0,''); e := null; exception when others then e := sqlerrm; end;
+  reset role; perform pg_temp.check('a sign the gap did not show is rejected', e like '%does not reach%', e);
+  set role authenticated;
+  begin perform public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000005',1,'{1,2,3,4,5,6,7,8,9}',3,null,'{0,1}','{+}',0,''); e := null; exception when others then e := sqlerrm; end;
+  reset role; perform pg_temp.check('easy rounds must include gap signs', e like '%invalid gap signs%', e);
+  set role authenticated;
+  begin perform public.mp_submit_round('aaaaaaaa-0000-0000-0000-000000000005',1,'{1,2,3,4,5,6,7,8,9}',3,'{"h:0:0":["+","-"]}'::jsonb,'{0,1}','{+}',0,''); e := null; exception when others then e := sqlerrm; end;
+  reset role; perform pg_temp.check('malformed gap signs are rejected', e like '%invalid gap signs%', e);
+end $$;
+select pg_temp.check('internal_valid_gaps accepts a well-formed easy board',
+  public.internal_valid_gaps('{"h:0:0":["+"],"v:0:0":["-"],"h:0:1":["+"],"v:0:1":["-"],"v:0:2":["-"],"h:1:0":["+"],"v:1:0":["-"],"h:1:1":["+"],"v:1:1":["-"],"v:1:2":["-"],"h:2:0":["+"],"h:2:1":["+"]}'::jsonb, 3, 1, array['+','-','*']));
+select pg_temp.blocked('player calls internal_valid_gaps', $q$select public.internal_valid_gaps(null, 3, 1, array['+'])$q$, 'authenticated', :'A');

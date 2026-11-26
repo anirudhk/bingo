@@ -3,6 +3,10 @@ import { rhythmInstruction } from './rhythmInstruction';
 import { LEVELS } from '../constants/levels';
 
 describe('rhythmInstruction', () => {
+  it('Easy (one sign per gap) asks for two touching numbers only', () => {
+    expect(rhythmInstruction(2, ['+', '-', '*'], 1)).toMatch(/^Tap two numbers that touch/);
+  });
+
   it('keeps the first lessons simple', () => {
     expect(rhythmInstruction(2, ['+'])).toBe('Tap a number, a sign, then a number next to it.');
   });
