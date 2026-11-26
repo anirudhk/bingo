@@ -6,6 +6,7 @@ import { getLevelProgress, isLevelUnlocked, useProgressStore } from '../../store
 import { LevelNode } from './LevelNode';
 import { UnitHeader, type UnitTone } from './UnitHeader';
 import { DailyPuzzleBanner } from './DailyPuzzleBanner';
+import { BuddiesCard } from './BuddiesCard';
 
 const UNIT_TONES: UnitTone[] = ['emerald', 'sky', 'violet', 'amber', 'rose'];
 
@@ -78,7 +79,7 @@ export const LearningPath: React.FC = () => {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500 to-lime-500 p-5 text-white shadow-lg shadow-emerald-500/20 dark:from-emerald-600 dark:to-lime-600 dark:shadow-none"
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-700 to-green-700 p-5 text-white shadow-lg shadow-emerald-700/20 dark:from-emerald-800 dark:to-green-800 dark:shadow-none"
         >
           <div
             className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-white/10"
@@ -110,8 +111,9 @@ export const LearningPath: React.FC = () => {
           </button>
         </motion.section>
 
-        <div className="lg:hidden">
+        <div className="space-y-3 lg:hidden">
           <DailyPuzzleBanner />
+          <BuddiesCard />
         </div>
 
         {UNITS.map((unit, unitIdx) => {
@@ -165,6 +167,7 @@ export const LearningPath: React.FC = () => {
 
       <aside className="hidden space-y-4 lg:block">
         <DailyPuzzleBanner />
+        <BuddiesCard />
         <section className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:ring-slate-800">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">Your path</div>
           <div className="mt-3 flex items-baseline justify-between text-sm">

@@ -39,7 +39,7 @@ export const UnitHeader: React.FC<UnitHeaderProps> = ({
             <p className="text-sm text-slate-500 dark:text-slate-400">{unit.shortDesc}</p>
           )}
         </div>
-        <span className="shrink-0 pt-0.5 text-sm font-semibold tabular-nums text-slate-400 dark:text-slate-500">
+        <span className="shrink-0 pt-0.5 text-sm font-semibold tabular-nums text-slate-500 dark:text-slate-400">
           {completedCount}/{totalCount}
         </span>
       </div>

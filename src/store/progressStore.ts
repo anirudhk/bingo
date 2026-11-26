@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { LEVELS } from '../constants/levels';
+import { earnedBuddyIds } from '../constants/buddies';
 
 export type Stars = 0 | 1 | 2 | 3;
 
@@ -43,6 +44,10 @@ export interface ProgressState {
   /** Daily-puzzle-specific streak (independent of the learning streak). */
   dailyStreak: StreakState;
   playBests: PlayModePersonalBests;
+  /** Number Buddies the player has unlocked: id → ISO time first unlocked. */
+  buddies: Record<string, string>;
+  /** Longest run of correct answers in a row (for the Blaze buddy). */
+  bestCombo: number;
 }
 
 export interface ProgressActions {
@@ -62,6 +67,13 @@ export interface ProgressActions {
     seconds: number,
     now?: Date
   ) => void;
+  /** Remember a combo length if it beats the best. */
+  recordCombo: (combo: number) => void;
+  /**
+   * Unlock every buddy the saved progress now earns. Returns the ids that
+   * were newly unlocked by this call (for the "new buddy" banner).
+   */
+  syncBuddies: (now?: Date) => string[];
   /** Wipe all progress. Used by Settings → Reset progress (future). */
   resetProgress: () => void;
   /** Update Quick Game / Time Attack personal bests after a completed session. */
@@ -88,6 +100,8 @@ const emptyState = (): ProgressState => ({
   daily: {},
   dailyStreak: { count: 0, lastPlayedDate: null },
   playBests: emptyPlayBests(),
+  buddies: {},
+  bestCombo: 0,
 });
 
 const isoDay = (d: Date): string => d.toISOString().slice(0, 10);
@@ -107,7 +121,7 @@ const rollStreak = (prev: StreakState, today: string): StreakState => {
 
 export const useProgressStore = create<ProgressStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       ...emptyState(),
 
       completeLevel: (id, stars, score, now = new Date()) =>
@@ -156,6 +170,21 @@ export const useProgressStore = create<ProgressStore>()(
 
       resetProgress: () => set(() => emptyState()),
 
+      recordCombo: (combo) =>
+        set((state) => (combo > state.bestCombo ? { bestCombo: combo } : state)),
+
+      syncBuddies: (now = new Date()) => {
+        const state = get();
+        const fresh = earnedBuddyIds(state).filter((id) => !state.buddies[id]);
+        if (fresh.length > 0) {
+          const at = now.toISOString();
+          set({
+            buddies: { ...state.buddies, ...Object.fromEntries(fresh.map((id) => [id, at])) },
+          });
+        }
+        return fresh;
+      },
+
       recordPlayModeBests: ({ gameMode, totalTimeMs, timeAttackRoundsCompleted }) =>
         set((state) => {
           const prev = state.playBests;
@@ -185,7 +214,7 @@ export const useProgressStore = create<ProgressStore>()(
     {
       name: 'gridgenius:progress:v1',
       storage: createJSONStorage(() => localStorage),
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         if (!persisted || typeof persisted !== 'object') return emptyState();
         if (version < 2) {
@@ -202,6 +231,8 @@ export const useProgressStore = create<ProgressStore>()(
         return {
           ...prev,
           playBests: prev.playBests ?? emptyPlayBests(),
+          buddies: prev.buddies ?? {},
+          bestCombo: prev.bestCombo ?? 0,
         };
       },
     }

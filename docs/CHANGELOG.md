@@ -12,6 +12,50 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Added — "Beat my time" links (2026-11-26)
+
+- **Challenge a friend** after a Classic or Quick Game: the link carries the mode, difficulty, board seed and your time (no server, no account). Opening it shows "A friend did this in 0:42", replays the identical five boards, and compares times to a tenth of a second, with Rematch and "Send it back with your time".
+- Classic and Quick Game boards are now generated from a seed (`gameSeed`); gameplay is unchanged.
+
+### Added — Class race (2026-11-26)
+
+- **Live classroom mode.** A teacher creates a room (`/class`: difficulty + 3/5/10 minutes) and gets a 6-letter code; students join at `/join` with a nickname as guests (no accounts). Everyone races the same sequence of seeded boards; the projector view shows who joined, a countdown, a live top-10 leaderboard and a final podium.
+- **Server-checked:** every answer is verified (path, gap signs, target) and must match the registered board for that index; boards are solved in order; the server keeps time and refuses late answers. Nicknames: 2–16 letters/digits, unique per room, word-filtered. Rooms are deleted after 7 days. Migration `20261126100000_classroom.sql`.
+
+### Added — Number Buddies (2026-11-26)
+
+- **13 collectible buddies**, each earned by a clear goal (first level, 3 stars, each unit, 5 in a row, daily solves and streaks, 10 in one Time Attack, plus a secret one). No random drops, nothing to buy. Unlocks are derived from saved progress (`earnedBuddyIds`), stored with their unlock date (progress store v4).
+- **Collection page** (`/buddies`): earned buddies in colour, locked ones as silhouettes with their goal; **Learn-screen card** with the count; **"New buddy unlocked" banner** with the unlock sound on the completion screen.
+
+### Added — juice, combos and Gridy (2026-11-26)
+
+- **Gridy**, an original mascot (a living number tile with a screen face and a "+" antenna, pure SVG): cheers, smiles or encourages in the answer bar and on the completion screens.
+- **Combos**: correct answers in a row; 🔥 counter in the header from 2, "🔥 3 in a row!" with a brighter sound and haptic from 3. A wrong answer or a hint resets it.
+- **Tile feedback**: the correct path pops green, a wrong path shakes red.
+
+### Changed — difficulty ladder and fitted board (2026-11-26)
+
+- **Each gap shows only some signs** (Play modes): Easy 3×3, 2 numbers, 1 sign per gap (+ − ×, auto-selected — tap two touching numbers); Medium 4×4, 2 numbers, 2 signs per gap; Hard 4×4, 3 numbers, 2 signs per gap, one answer per target. Quick Game and Learn levels are unchanged.
+- **Paths count in both tap directions**, and a solution is identified by its tiles and the sign in each gap (8 − 3 tapped either way is one solution). The hint uses the same search.
+- **Multiplayer** rounds carry the gap signs; the server requires both players' boards (signs included) to match and rejects any sign its gap didn't show (migration `20261126000000_sign_slots.sql`).
+- **One-row game header** (Back · target · clock and score) replaces the header card and the separate target card.
+- **The board always fits the screen**: it measures the free space and sizes tiles and sign lanes to it — no scrolling at 390×844 or 990×742 on any difficulty, including 5×5 Learn levels. Sign buttons: 49 px on Easy, 29–36 px on Medium/Hard (were 16–21 px).
+- Difficulty cards describe the rules instead of showing age bands.
+
+### Changed — UI feedback round (2026-11-24)
+
+- **Duolingo-style answer bar:** full-width at the bottom, stays until the player taps **Continue** / **Try again** (Time Attack and multiplayer still dismiss it automatically). The old floating box sat off-centre because its animation overrode the centring. The round clock stops at the solve, so reading the bar isn't timed.
+- **Kid-friendly misses:** "You need 4 more to make 9" / "That's 4 too many", instead of "Off by -4".
+- **Progress counts solved questions:** the bar starts empty and moves only on a correct answer ("2 of 5 solved"); the duplicate "Round" chip is gone.
+- **Bigger tap targets:** each operator's tap area fills its share of the gap (3×3: 62×31 / 31×52 px); Back and Settings are 44 px.
+- **Readability:** grey labels darkened to slate-500 (#64748B); white text now sits on green-700 instead of #58cc02 (2.2:1 → about 5:1); the target number uses a darker green.
+- **Calmer lessons:** no timer on Learn levels; the rules line is plain language and only mentions left-to-right order once × appears (Unit 4+).
+- **Clear** is a neutral button; the completion screen says how to earn 3 stars and the title matches the stars; backgrounds reach the bottom of the screen.
+
+### Added — guest multiplayer (2026-11-24)
+
+- **Play online without an account.** "Play as guest" uses Supabase anonymous sign-in (no email). Guests can use friend links and Quick match; their games are unrated, their profiles private, and they're deleted after 30 days idle. The daily leaderboard stays for accounts (guests play the daily offline). Migration `20261124000000_guest_multiplayer.sql`; needs "Allow anonymous sign-ins" in Supabase.
+
 ### Changed — launch polish (2026-11-23)
 
 - **Faster first load:** the Supabase SDK loads on demand (`loadSupabase` / `useSupabase`) and multiplayer, profile, leaderboard and legal screens are lazy routes. Main bundle 663 → 425 KB (134 KB gzipped).

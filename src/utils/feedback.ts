@@ -15,6 +15,7 @@ export type FeedbackEvent =
   | 'operator' // selected an operator
   | 'invalid' // tapped something that isn't allowed right now
   | 'correct' // solved the round
+  | 'combo' // solved the round, 3+ in a row
   | 'wrong' // submitted a wrong answer
   | 'hint' // revealed a hint
   | 'complete' // finished a game / level
@@ -49,6 +50,12 @@ const SOUNDS: Record<FeedbackEvent, Note[]> = {
     { freq: G5, at: 0.14, dur: 0.16, wave: 'triangle', gain: 0.14 },
     { freq: C6, at: 0.14, dur: 0.2, wave: 'sine', gain: 0.06 },
   ],
+  combo: [
+    { freq: E5, at: 0, dur: 0.08, wave: 'triangle', gain: 0.14 },
+    { freq: G5, at: 0.06, dur: 0.08, wave: 'triangle', gain: 0.14 },
+    { freq: C6, at: 0.12, dur: 0.1, wave: 'triangle', gain: 0.14 },
+    { freq: E6, at: 0.18, dur: 0.22, wave: 'sine', gain: 0.1 },
+  ],
   wrong: [
     { freq: 330, at: 0, dur: 0.12, wave: 'triangle', gain: 0.12, slideTo: 300 },
     { freq: 247, at: 0.11, dur: 0.18, wave: 'triangle', gain: 0.12, slideTo: 220 },
@@ -78,6 +85,7 @@ const HAPTICS: Record<FeedbackEvent, number | number[]> = {
   operator: 8,
   invalid: 35,
   correct: [15, 50, 30],
+  combo: [15, 40, 15, 40, 40],
   wrong: [50, 40, 50],
   hint: 12,
   complete: [20, 60, 20, 60, 45],

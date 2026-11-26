@@ -30,24 +30,24 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
     {
       level: 'easy' as DifficultyLevel,
       title: 'Easy',
-      subtitle: 'Ages 5-7',
-      description: '2 numbers, 1 operator',
+      subtitle: 'Warm-up',
+      description: 'Tap 2 numbers · each gap has 1 sign',
       color: 'bg-lime-100 text-lime-700 dark:bg-lime-950 dark:text-lime-200',
       icon: '🌟',
     },
     {
       level: 'medium' as DifficultyLevel,
       title: 'Medium',
-      subtitle: 'Ages 8-10',
-      description: '3 numbers, 2 operators',
+      subtitle: 'Choose the sign',
+      description: '2 numbers · pick from 2 signs per gap',
       color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-200',
       icon: '🚀',
     },
     {
       level: 'hard' as DifficultyLevel,
       title: 'Hard',
-      subtitle: 'Ages 11+',
-      description: '3 numbers, 2 operators · one hidden path',
+      subtitle: 'One hidden path',
+      description: '3 numbers · 2 signs per gap · one answer',
       color: 'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-200',
       icon: '🔥',
     },
@@ -56,7 +56,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
   return (
     <div className="mx-auto h-full max-w-5xl px-4 py-6 lg:px-8 lg:py-10">
       <motion.section
-        className="relative mb-5 overflow-hidden rounded-2xl bg-[#58cc02] p-4 text-white shadow-xl shadow-lime-200/70 dark:shadow-lime-950/30"
+        className="relative mb-5 overflow-hidden rounded-2xl bg-green-700 p-4 text-white shadow-xl shadow-lime-200/70 dark:shadow-lime-950/30"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35 }}
@@ -120,7 +120,7 @@ export const DifficultySelector: React.FC<DifficultySelectorProps> = ({
                 <div className="text-lg font-black text-slate-900 dark:text-white">
                   {difficulty.title}
                 </div>
-                <div className="mt-0.5 text-sm font-black text-slate-400 dark:text-slate-500">
+                <div className="mt-0.5 text-sm font-black text-slate-500 dark:text-slate-400">
                   {difficulty.subtitle}
                 </div>
                 <div className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-300">

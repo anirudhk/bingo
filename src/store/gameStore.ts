@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  GapOperators,
   GameState,
   DifficultyLevel,
   GameMode,
@@ -7,12 +8,10 @@ import type {
   DifficultyConfig,
   Puzzle,
 } from '../types/game';
-import { DIFFICULTY_CONFIGS, SUCCESS_DELAY_MS } from '../constants/game';
+import { DIFFICULTY_CONFIGS, SUCCESS_DELAY_MS, getPlayConfig } from '../constants/game';
 import { getLevel } from '../constants/levels';
 import {
-  generateValidGrid,
-  getAllCombinations,
-  generateTargets,
+  generateValidBoardFromConfig,
   generateValidGridFromConfig,
   getAllCombinationsFromConfig,
   generateTargetsFromConfig,
@@ -20,9 +19,14 @@ import {
 } from '../utils/gridGenerator';
 import { calculatePathResult } from '../utils/calculator';
 import { logger } from '../utils/logger';
+import { newGameSeed } from '../utils/challenge';
 
 interface GameStore extends GameState {
-  initializeGame: (difficulty: DifficultyLevel, gameMode?: GameMode) => void;
+  /**
+   * Start a Play-mode game. Classic and Quick Game boards come from a seed
+   * (random unless given), so a "beat my time" link can replay them exactly.
+   */
+  initializeGame: (difficulty: DifficultyLevel, gameMode?: GameMode, seed?: string) => void;
   /** Initialise a Learn-path level by id. Sets gameMode='learning' and currentLevelId. */
   initializeLevel: (levelId: string) => void;
   /** Initialise a static puzzle. Sets gameMode='dailyPuzzle' and currentPuzzleId.
@@ -34,6 +38,8 @@ interface GameStore extends GameState {
   initializeMultiplayerRound: (difficulty: DifficultyLevel, seed: string) => void;
   submitSolution: (tiles: Tile[], operators: string[]) => boolean;
   nextRound: () => void;
+  /** Player tapped Continue on the "Correct!" bar. No-op unless the round is solved. */
+  continueAfterSolve: () => void;
   resetGame: () => void;
   /** Tear down all timers/timeouts. Call from component unmount and on reset. */
   cleanup: () => void;
@@ -72,6 +78,8 @@ let autoAdvanceTimeout: ReturnType<typeof setTimeout> | null = null;
 // Page visibility: while hidden, the round clock is paused and a due
 // auto-advance waits until the player is back.
 let pageHiddenAt: number | null = null;
+// When the current round was solved (freezes the clock until Continue).
+let roundSolvedAt: number | null = null;
 let advanceWhenVisible = false;
 
 const clearTimeAttackInterval = () => {
@@ -108,6 +116,9 @@ const createInitialState = (): GameState => ({
   currentLevelId: null,
   wrongAttempts: 0,
   hintsUsed: 0,
+  comboStreak: 0,
+  gameSeed: null,
+  gapOperators: null,
   roundSolved: false,
   currentPuzzleId: null,
 });
@@ -132,16 +143,25 @@ const TIME_ATTACK_ROUNDS_PER_TIER = 2;
 const buildTimeAttackRound = (
   difficulty: DifficultyLevel,
   roundsCompleted: number
-): Pick<GameState, 'grid' | 'targetNumbers' | 'currentTarget'> | null => {
+): Pick<GameState, 'grid' | 'gapOperators' | 'targetNumbers' | 'currentTarget'> | null => {
+  const config = DIFFICULTY_CONFIGS[difficulty];
   for (let attempt = 0; attempt < MAX_INIT_RETRIES; attempt++) {
-    const grid = generateValidGrid(difficulty);
-    const targets = generateTargets(getAllCombinations(grid, difficulty), difficulty);
+    const { grid, gaps } = generateValidBoardFromConfig(config);
+    const targets = generateTargetsFromConfig(
+      getAllCombinationsFromConfig(grid, config, gaps),
+      config
+    );
     if (targets.length === 0) continue;
     const tier = Math.min(
       targets.length - 1,
       Math.floor(roundsCompleted / TIME_ATTACK_ROUNDS_PER_TIER)
     );
-    return { grid: cloneGridTiles(grid), targetNumbers: targets, currentTarget: targets[tier] };
+    return {
+      grid: cloneGridTiles(grid),
+      gapOperators: gaps,
+      targetNumbers: targets,
+      currentTarget: targets[tier],
+    };
   }
   logger.error(`buildTimeAttackRound: no solvable grid for "${difficulty}"`);
   return null;
@@ -150,24 +170,41 @@ const buildTimeAttackRound = (
 export const useGameStore = create<GameStore>((set, get) => ({
   ...createInitialState(),
 
-  initializeGame: (difficulty: DifficultyLevel, gameMode: GameMode = 'classic') => {
+  initializeGame: (difficulty: DifficultyLevel, gameMode: GameMode = 'classic', seed?: string) => {
     // Always tear down prior timers before starting a fresh session.
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
-    // Quick Game uses the easy config (3x3 grid, 2 tiles + 1 operator) and a
-    // 5-round structure — pick-up-and-play (see ADR-002).
+    // Quick Game keeps its own fixed shape (QUICK_GAME_CONFIG) and scores as
+    // easy; the other modes use the difficulty ladder (see ADR-002).
     const effectiveDifficulty = gameMode === 'quickGame' ? 'easy' : difficulty;
-    const effectiveConfig = DIFFICULTY_CONFIGS[effectiveDifficulty];
+    const effectiveConfig = getPlayConfig(gameMode, difficulty);
 
     let targetNumbers: number[] = [];
     let grid: Tile[] = [];
-    let attempt = 0;
-    while (attempt < MAX_INIT_RETRIES && targetNumbers.length === 0) {
-      attempt += 1;
-      grid = generateValidGrid(effectiveDifficulty);
-      const combinations = getAllCombinations(grid, effectiveDifficulty);
-      targetNumbers = generateTargets(combinations, effectiveDifficulty);
+    let gaps: GapOperators | null = null;
+    // Classic and Quick Game: one seeded board + targets, so the game can be
+    // shared and replayed identically. Time Attack draws fresh random boards.
+    const gameSeed =
+      gameMode === 'classic' || gameMode === 'quickGame' ? (seed ?? newGameSeed()) : null;
+    if (gameSeed) {
+      const built = generateValidGridFromConfigSeeded(effectiveConfig, gameSeed);
+      if (built) {
+        grid = built.grid;
+        gaps = built.gaps;
+        targetNumbers = built.targetNumbers;
+      }
+    } else {
+      let attempt = 0;
+      while (attempt < MAX_INIT_RETRIES && targetNumbers.length === 0) {
+        attempt += 1;
+        const board = generateValidBoardFromConfig(effectiveConfig);
+        grid = board.grid;
+        gaps = board.gaps;
+        const combinations = getAllCombinationsFromConfig(grid, effectiveConfig, gaps);
+        targetNumbers = generateTargetsFromConfig(combinations, effectiveConfig);
+      }
     }
 
     if (targetNumbers.length === 0) {
@@ -188,6 +225,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     set({
       grid: cloneGridTiles(grid),
+      gapOperators: gaps,
+      gameSeed,
       targetNumbers,
       currentTarget: targetNumbers[0],
       currentRound: 1,
@@ -206,6 +245,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -218,6 +258,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   initializeLevel: (levelId: string) => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
     const level = getLevel(levelId);
     if (!level) {
@@ -273,6 +314,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: levelId,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
+      gameSeed: null,
+      gapOperators: null,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -281,6 +325,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   initializePuzzle: (puzzle: Puzzle) => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
     set({
       grid: cloneGridTiles(puzzle.tiles),
@@ -303,6 +348,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
+      gameSeed: null,
+      gapOperators: null,
       roundSolved: false,
       currentPuzzleId: puzzle.id,
     });
@@ -311,6 +359,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   initializeMultiplayerRound: (difficulty: DifficultyLevel, seed: string) => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
     const cfg = { ...DIFFICULTY_CONFIGS[difficulty], totalRounds: 1 };
     const built = generateValidGridFromConfigSeeded(cfg, seed);
@@ -326,7 +375,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
 
-    const { grid, targetNumbers } = built;
+    const { grid, gaps, targetNumbers } = built;
 
     set({
       grid: cloneGridTiles(grid),
@@ -348,6 +397,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       currentLevelId: null,
       wrongAttempts: 0,
       hintsUsed: 0,
+      comboStreak: 0,
+      gameSeed: null,
+      gapOperators: gaps,
       roundSolved: false,
       currentPuzzleId: null,
     });
@@ -371,6 +423,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const result = calculatePathResult(tiles, operators);
 
     if (result !== currentTarget) {
+      // A slip ends the combo.
+      set({ comboStreak: 0 });
       // Track wrong attempts for accuracy-based stars on the Learn path *and*
       // for the daily-puzzle result screen (so we can show "first try!" etc.).
       if (gameMode === 'learning' || gameMode === 'dailyPuzzle' || gameMode === 'multiplayer') {
@@ -384,7 +438,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const timeAttackMultiplier = gameMode === 'timeAttack' ? 2 : 1;
     const roundScore = Math.floor(baseScore * difficultyMultiplier * timeAttackMultiplier);
 
-    set((state) => ({ score: state.score + roundScore, roundSolved: true }));
+    set((state) => ({
+      score: state.score + roundScore,
+      roundSolved: true,
+      comboStreak: state.comboStreak + 1,
+    }));
 
     if (gameMode === 'timeAttack') {
       get().updateTimeAttack();
@@ -405,7 +463,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return true;
     }
 
-    // Auto-advance after a short delay so the player sees the success feedback.
+    // Freeze the round clock at the moment of the solve: time spent reading
+    // the feedback bar doesn't count.
+    roundSolvedAt = Date.now();
+
+    // Most modes wait for the player to tap Continue (continueAfterSolve).
+    // Time Attack is a speed run, so it moves on by itself after a beat.
+    if (gameMode !== 'timeAttack') return true;
+
     // Tracked so resetGame / cleanup / mode change can cancel it.
     clearAutoAdvance();
     autoAdvanceTimeout = setTimeout(() => {
@@ -418,6 +483,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }, SUCCESS_DELAY_MS);
 
     return true;
+  },
+
+  continueAfterSolve: () => {
+    if (!get().roundSolved || get().gameMode === 'multiplayer') return;
+    clearAutoAdvance();
+    get().nextRound();
   },
 
   nextRound: () => {
@@ -445,7 +516,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const now = Date.now();
-    const thisRoundMs = roundStartTime ? now - roundStartTime : 0;
+    const roundEnd = roundSolvedAt ?? now;
+    roundSolvedAt = null;
+    const thisRoundMs = roundStartTime ? Math.max(0, roundEnd - roundStartTime) : 0;
     const accumulatedMs = roundsTimeMs + thisRoundMs;
 
     if (currentRound >= totalRounds) {
@@ -494,7 +567,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cleanup: () => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
     advanceWhenVisible = false;
+    roundSolvedAt = null;
   },
 
   deductScore: (amount: number) => {
@@ -506,6 +581,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set((state) => ({
       score: Math.max(0, state.score - Math.max(0, penalty)),
       hintsUsed: state.hintsUsed + 1,
+      // A hinted answer doesn't extend the combo.
+      comboStreak: 0,
+      gameSeed: null,
     }));
   },
 
@@ -555,8 +633,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   updateTimer: () => {
-    const { roundStartTime, roundsTimeMs } = get();
-    if (roundStartTime) {
+    const { roundStartTime, roundsTimeMs, roundSolved } = get();
+    if (roundStartTime && !roundSolved) {
       const thisRoundMs = Date.now() - roundStartTime;
       set({ roundTime: thisRoundMs, totalTime: roundsTimeMs + thisRoundMs });
     }

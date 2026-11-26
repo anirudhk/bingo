@@ -14,15 +14,14 @@ const renderBoard = (props?: Partial<React.ComponentProps<typeof ButtonGameBoard
 describe('<ButtonGameBoard /> smoke', () => {
   it('renders the header chrome and a target number', () => {
     renderBoard();
-    expect(screen.getByText(/Classic/i)).toBeInTheDocument();
-    expect(screen.getByText(/Make this number/i)).toBeInTheDocument();
+    expect(screen.getByText('Classic · Easy')).toBeInTheDocument();
+    expect(screen.getByRole('status', { name: /Target number/i })).toBeInTheDocument();
     expect(useGameStore.getState().gameStatus).toBe('playing');
   });
 
   it('shows the difficulty label in the header', () => {
     renderBoard();
-    expect(screen.getByText(/Difficulty:/i)).toBeInTheDocument();
-    expect(screen.getByText(/Difficulty: easy/i)).toBeInTheDocument();
+    expect(screen.getByText(/· Easy$/)).toBeInTheDocument();
   });
 
   it('shows Learn level context when launched from the curriculum', () => {

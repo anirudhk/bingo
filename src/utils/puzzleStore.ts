@@ -1,6 +1,6 @@
 import type { DifficultyLevel, Puzzle, PuzzleBundle, PuzzleThemeId } from '../types/game';
 import { makeRng } from './rng';
-import { getAllCombinationsFromConfig } from './gridGenerator';
+import { countDistinctSolutions, getAllCombinationsFromConfig } from './gridGenerator';
 
 /**
  * Lazy puzzle bundle loader + pure query helpers.
@@ -114,16 +114,18 @@ export const dailyDifficultyFor = (date: Date = new Date()): DifficultyLevel => 
   return 'hard';
 };
 
-/** Number of distinct (path, operators) solutions that hit the puzzle's target. */
+/** Distinct solutions (tiles + sign in each gap, either tap direction) that hit the target. */
 export const countPuzzleSolutions = (puzzle: Puzzle): number =>
-  getAllCombinationsFromConfig(puzzle.tiles, {
-    gridSize: puzzle.gridSize,
-    tilesCount: puzzle.optimalSolution.tileIds.length,
-    operatorsCount: puzzle.optimalSolution.operators.length,
-    availableOperators: puzzle.availableOperators,
-    targetRange: { min: puzzle.target, max: puzzle.target },
-    totalRounds: 1,
-  }).filter((c) => c.result === puzzle.target).length;
+  countDistinctSolutions(
+    getAllCombinationsFromConfig(puzzle.tiles, {
+      gridSize: puzzle.gridSize,
+      tilesCount: puzzle.optimalSolution.tileIds.length,
+      operatorsCount: puzzle.optimalSolution.operators.length,
+      availableOperators: puzzle.availableOperators,
+      targetRange: { min: puzzle.target, max: puzzle.target },
+      totalRounds: 1,
+    })
+  );
 
 /**
  * Today's daily puzzle following the weekly schedule. Hard days prefer

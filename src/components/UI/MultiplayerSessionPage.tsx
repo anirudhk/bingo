@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthOptional } from '../../auth/authContext';
+import { MultiplayerGuestGate } from './MultiplayerGuestGate';
 import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { ButtonGameBoard } from '../GameBoard/ButtonGameBoard';
 import { useGameStore } from '../../store/gameStore';
@@ -119,7 +120,7 @@ export const MultiplayerSessionPage: React.FC = () => {
         if (!path) return;
         // Send the board we were shown plus our answer; the server checks the
         // answer, requires both players' boards to match and times the round.
-        const { grid, currentTarget } = useGameStore.getState();
+        const { grid, currentTarget, gapOperators } = useGameStore.getState();
         const gridValues = [...grid].sort((a, b) => a.id - b.id).map((t) => t.value);
         const hash = await timingFingerprint([
           session.id,
@@ -132,6 +133,7 @@ export const MultiplayerSessionPage: React.FC = () => {
           p_round: session.current_round,
           p_grid: gridValues,
           p_target: currentTarget,
+          p_gaps: gapOperators,
           p_tile_ids: path.tileIds,
           p_operators: path.operators,
           p_wrong: wrongAttempts,
@@ -213,14 +215,7 @@ export const MultiplayerSessionPage: React.FC = () => {
   }
 
   if (!auth?.user) {
-    return (
-      <div className="p-4 text-sm">
-        <Link to="/learn" className="font-bold text-lime-700">
-          ← Back
-        </Link>
-        <p className="mt-4">Sign in required.</p>
-      </div>
-    );
+    return <MultiplayerGuestGate reason="Join this match as a guest, or sign in." />;
   }
 
   if (session === undefined) {

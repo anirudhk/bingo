@@ -102,7 +102,8 @@ describe('submitSolution', () => {
     const ok = useGameStore.getState().submitSolution(hit.tiles, hit.operators);
     expect(ok).toBe(true);
     expect(useGameStore.getState().score).toBeGreaterThan(0);
-    expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).not.toBeNull();
+    // Classic waits for the player's Continue tap rather than a timer.
+    expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).toBeNull();
   });
 
   it('returns false on a wrong answer and does not change the score', () => {
@@ -116,8 +117,8 @@ describe('submitSolution', () => {
     expect(useGameStore.getState().score).toBe(before);
   });
 
-  it('cleanup clears the auto-advance timeout', () => {
-    useGameStore.getState().initializeGame('easy', 'classic');
+  it('cleanup clears the auto-advance timeout (Time Attack)', () => {
+    useGameStore.getState().initializeGame('easy', 'timeAttack');
     useGameStore.setState({ currentTarget: 999_999 });
     // Force a "correct" answer by aligning currentTarget with a known sum.
     const grid = useGameStore.getState().grid;
@@ -144,8 +145,10 @@ describe('submitSolution', () => {
     expect(useGameStore.getState().submitSolution([grid[0], grid[1]], ['+'])).toBe(false);
     expect(useGameStore.getState().score).toBe(scoreAfterFirst);
 
-    // After advancing, the next round is open again.
-    vi.runOnlyPendingTimers();
+    // Nothing advances by itself; Continue opens the next round.
+    vi.advanceTimersByTime(10_000);
+    expect(useGameStore.getState().currentRound).toBe(1);
+    useGameStore.getState().continueAfterSolve();
     expect(useGameStore.getState().currentRound).toBe(2);
     expect(useGameStore.getState().roundSolved).toBe(false);
   });
@@ -299,10 +302,11 @@ describe('initializeLevel (Learn path)', () => {
     const sum = grid[0].value + grid[1].value;
     useGameStore.setState({ currentTarget: sum });
     useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
-    expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).not.toBeNull();
+    expect(useGameStore.getState().roundSolved).toBe(true);
 
     useGameStore.getState().initializeLevel('u1-l2');
     expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).toBeNull();
+    expect(useGameStore.getState().roundSolved).toBe(false);
     expect(useGameStore.getState().currentLevelId).toBe('u1-l2');
   });
 });
@@ -340,9 +344,10 @@ describe('init retry cap', () => {
     // Patch the gridGenerator module so generateTargets always returns [].
     vi.resetModules();
     vi.doMock('../utils/gridGenerator', () => ({
-      generateValidGrid: () => [],
-      getAllCombinations: () => [],
-      generateTargets: () => [],
+      generateValidBoardFromConfig: () => ({ grid: [], gaps: null }),
+      generateValidGridFromConfigSeeded: () => null,
+      getAllCombinationsFromConfig: () => [],
+      generateTargetsFromConfig: () => [],
     }));
 
     const { useGameStore: freshStore } = await import('./gameStore');
@@ -374,16 +379,37 @@ describe('hints and hidden tabs', () => {
     expect(useGameStore.getState().roundStartTime! - start).toBeGreaterThanOrEqual(60_000);
   });
 
-  it('holds auto-advance while hidden and advances on return', () => {
-    useGameStore.getState().initializeGame('easy', 'classic');
+  it('holds Time Attack auto-advance while hidden and advances on return', () => {
+    useGameStore.getState().initializeGame('easy', 'timeAttack');
     const grid = useGameStore.getState().grid;
     useGameStore.setState({ currentTarget: grid[0].value + grid[1].value });
     useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
     useGameStore.getState().setPageHidden(true);
     vi.advanceTimersByTime(5_000);
-    expect(useGameStore.getState().currentRound).toBe(1);
+    expect(useGameStore.getState().grid).toBe(grid);
     useGameStore.getState().setPageHidden(false);
-    expect(useGameStore.getState().currentRound).toBe(2);
+    expect(useGameStore.getState().grid).not.toBe(grid);
+    useGameStore.getState().cleanup();
+  });
+
+  it('Continue advances, and time spent on the feedback bar is not counted', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    const grid = useGameStore.getState().grid;
+    useGameStore.setState({ currentTarget: grid[0].value + grid[1].value });
+    vi.advanceTimersByTime(3_000); // solving takes 3 s
+    useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
+    vi.advanceTimersByTime(20_000); // reading the bar for 20 s
+    useGameStore.getState().continueAfterSolve();
+    const s = useGameStore.getState();
+    expect(s.currentRound).toBe(2);
+    expect(s.roundsTimeMs).toBeGreaterThanOrEqual(3_000);
+    expect(s.roundsTimeMs).toBeLessThan(4_000);
+  });
+
+  it('Continue does nothing before the round is solved', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    useGameStore.getState().continueAfterSolve();
+    expect(useGameStore.getState().currentRound).toBe(1);
   });
 
   it('Time Attack keeps running while hidden', () => {
@@ -392,5 +418,86 @@ describe('hints and hidden tabs', () => {
     vi.advanceTimersByTime(61_000);
     expect(useGameStore.getState().gameStatus).toBe('completed');
     useGameStore.getState().setPageHidden(false);
+  });
+});
+
+describe('difficulty ladder in the store', () => {
+  it('easy boards carry one sign per gap', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    const gaps = useGameStore.getState().gapOperators!;
+    expect(Object.values(gaps).every((signs) => signs.length === 1)).toBe(true);
+  });
+
+  it('Quick Game is unchanged: 3×3, + and − in every gap', () => {
+    useGameStore.getState().initializeGame('easy', 'quickGame');
+    const s = useGameStore.getState();
+    expect(s.gapOperators).toBeNull();
+    expect(s.grid).toHaveLength(9);
+    expect(s.difficulty).toBe('easy');
+  });
+
+  it('Time Attack rounds get fresh gap signs with each new board', () => {
+    useGameStore.getState().initializeGame('medium', 'timeAttack');
+    const first = useGameStore.getState().gapOperators;
+    expect(first).not.toBeNull();
+    useGameStore.setState({ roundSolved: true });
+    useGameStore.getState().nextRound();
+    expect(useGameStore.getState().gapOperators).not.toBe(first);
+    useGameStore.getState().cleanup();
+  });
+});
+
+describe('combo streak', () => {
+  const solveCurrent = () => {
+    const grid = useGameStore.getState().grid;
+    useGameStore.setState({ currentTarget: grid[0].value + grid[1].value });
+    return useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
+  };
+
+  it('counts correct answers in a row and resets on a wrong answer', () => {
+    useGameStore.getState().initializeLevel('u1-l1');
+    expect(solveCurrent()).toBe(true);
+    expect(useGameStore.getState().comboStreak).toBe(1);
+    useGameStore.getState().continueAfterSolve();
+    solveCurrent();
+    expect(useGameStore.getState().comboStreak).toBe(2);
+    useGameStore.getState().continueAfterSolve();
+    useGameStore.setState({ currentTarget: -1 });
+    const grid = useGameStore.getState().grid;
+    useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
+    expect(useGameStore.getState().comboStreak).toBe(0);
+  });
+
+  it('a hint ends the combo', () => {
+    useGameStore.getState().initializeLevel('u1-l1');
+    solveCurrent();
+    useGameStore.getState().continueAfterSolve();
+    useGameStore.getState().recordHint(5);
+    expect(useGameStore.getState().comboStreak).toBe(0);
+  });
+});
+
+describe('seeded games (challenge links)', () => {
+  const snapshot = () => {
+    const s = useGameStore.getState();
+    return { grid: s.grid.map((t) => t.value), gaps: s.gapOperators, targets: s.targetNumbers };
+  };
+
+  it.each(['classic', 'quickGame'] as const)('the same seed replays the same %s game', (mode) => {
+    useGameStore.getState().initializeGame('hard', mode, 'seed42');
+    const a = snapshot();
+    expect(useGameStore.getState().gameSeed).toBe('seed42');
+    useGameStore.getState().initializeGame('hard', mode, 'seed42');
+    expect(snapshot()).toEqual(a);
+    useGameStore.getState().initializeGame('hard', mode, 'other7');
+    expect(snapshot()).not.toEqual(a);
+  });
+
+  it('every Classic game gets a shareable seed; Time Attack does not', () => {
+    useGameStore.getState().initializeGame('medium', 'classic');
+    expect(useGameStore.getState().gameSeed).toMatch(/^[a-z0-9]{8,}$/);
+    useGameStore.getState().initializeGame('medium', 'timeAttack');
+    expect(useGameStore.getState().gameSeed).toBeNull();
+    useGameStore.getState().cleanup();
   });
 });

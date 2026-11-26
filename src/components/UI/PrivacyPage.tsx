@@ -21,6 +21,22 @@ export const PrivacyPage: React.FC = () => (
       receive them. Clearing your browser data removes them.
     </p>
 
+    <h2>Multiplayer as a guest</h2>
+    <p>
+      You can play online matches without an account. Tapping &quot;Play as guest&quot; creates a
+      random guest ID (no email, no name) so the server can run your matches. We store that ID and
+      your match results. Guest games are unrated, guest profiles are private, and guests inactive
+      for 30 days are deleted automatically. Your opponent sees a generated guest name.
+    </p>
+
+    <h2>Class races</h2>
+    <p>
+      In a class race, students join with a room code and a nickname as guests — no email or
+      account. We store the nickname, score and answers for that room so the leaderboard works.
+      Nicknames are checked against a word filter and should not be real names. Rooms and everything
+      in them are deleted after 7 days.
+    </p>
+
     <h2>Accounts (13 and over)</h2>
     <p>Accounts are for people aged 13 or older. If you sign in, we store:</p>
     <ul>

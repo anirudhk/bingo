@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useAuthOptional } from '../../auth/authContext';
+import { MultiplayerGuestGate } from './MultiplayerGuestGate';
 import { useSupabase, isSupabaseConfigured } from '../../lib/supabase/client';
 import { logger } from '../../utils/logger';
 
@@ -62,12 +63,7 @@ export const MultiplayerJoinPage: React.FC = () => {
 
   if (!auth?.user) {
     return (
-      <div className="p-4 text-sm">
-        <Link to="/learn" className="font-bold text-lime-700">
-          ← Back
-        </Link>
-        <p className="mt-4">Sign in to accept this invite.</p>
-      </div>
+      <MultiplayerGuestGate reason="You've been invited to a match. Play as a guest to accept." />
     );
   }
 
