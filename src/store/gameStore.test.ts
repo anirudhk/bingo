@@ -102,7 +102,8 @@ describe('submitSolution', () => {
     const ok = useGameStore.getState().submitSolution(hit.tiles, hit.operators);
     expect(ok).toBe(true);
     expect(useGameStore.getState().score).toBeGreaterThan(0);
-    expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).not.toBeNull();
+    // Classic waits for the player's Continue tap rather than a timer.
+    expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).toBeNull();
   });
 
   it('returns false on a wrong answer and does not change the score', () => {
@@ -116,8 +117,8 @@ describe('submitSolution', () => {
     expect(useGameStore.getState().score).toBe(before);
   });
 
-  it('cleanup clears the auto-advance timeout', () => {
-    useGameStore.getState().initializeGame('easy', 'classic');
+  it('cleanup clears the auto-advance timeout (Time Attack)', () => {
+    useGameStore.getState().initializeGame('easy', 'timeAttack');
     useGameStore.setState({ currentTarget: 999_999 });
     // Force a "correct" answer by aligning currentTarget with a known sum.
     const grid = useGameStore.getState().grid;
@@ -144,8 +145,10 @@ describe('submitSolution', () => {
     expect(useGameStore.getState().submitSolution([grid[0], grid[1]], ['+'])).toBe(false);
     expect(useGameStore.getState().score).toBe(scoreAfterFirst);
 
-    // After advancing, the next round is open again.
-    vi.runOnlyPendingTimers();
+    // Nothing advances by itself; Continue opens the next round.
+    vi.advanceTimersByTime(10_000);
+    expect(useGameStore.getState().currentRound).toBe(1);
+    useGameStore.getState().continueAfterSolve();
     expect(useGameStore.getState().currentRound).toBe(2);
     expect(useGameStore.getState().roundSolved).toBe(false);
   });
@@ -299,10 +302,11 @@ describe('initializeLevel (Learn path)', () => {
     const sum = grid[0].value + grid[1].value;
     useGameStore.setState({ currentTarget: sum });
     useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
-    expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).not.toBeNull();
+    expect(useGameStore.getState().roundSolved).toBe(true);
 
     useGameStore.getState().initializeLevel('u1-l2');
     expect(__getActiveTimerHandlesForTests().autoAdvanceTimeout).toBeNull();
+    expect(useGameStore.getState().roundSolved).toBe(false);
     expect(useGameStore.getState().currentLevelId).toBe('u1-l2');
   });
 });
@@ -374,16 +378,37 @@ describe('hints and hidden tabs', () => {
     expect(useGameStore.getState().roundStartTime! - start).toBeGreaterThanOrEqual(60_000);
   });
 
-  it('holds auto-advance while hidden and advances on return', () => {
-    useGameStore.getState().initializeGame('easy', 'classic');
+  it('holds Time Attack auto-advance while hidden and advances on return', () => {
+    useGameStore.getState().initializeGame('easy', 'timeAttack');
     const grid = useGameStore.getState().grid;
     useGameStore.setState({ currentTarget: grid[0].value + grid[1].value });
     useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
     useGameStore.getState().setPageHidden(true);
     vi.advanceTimersByTime(5_000);
-    expect(useGameStore.getState().currentRound).toBe(1);
+    expect(useGameStore.getState().grid).toBe(grid);
     useGameStore.getState().setPageHidden(false);
-    expect(useGameStore.getState().currentRound).toBe(2);
+    expect(useGameStore.getState().grid).not.toBe(grid);
+    useGameStore.getState().cleanup();
+  });
+
+  it('Continue advances, and time spent on the feedback bar is not counted', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    const grid = useGameStore.getState().grid;
+    useGameStore.setState({ currentTarget: grid[0].value + grid[1].value });
+    vi.advanceTimersByTime(3_000); // solving takes 3 s
+    useGameStore.getState().submitSolution([grid[0], grid[1]], ['+']);
+    vi.advanceTimersByTime(20_000); // reading the bar for 20 s
+    useGameStore.getState().continueAfterSolve();
+    const s = useGameStore.getState();
+    expect(s.currentRound).toBe(2);
+    expect(s.roundsTimeMs).toBeGreaterThanOrEqual(3_000);
+    expect(s.roundsTimeMs).toBeLessThan(4_000);
+  });
+
+  it('Continue does nothing before the round is solved', () => {
+    useGameStore.getState().initializeGame('easy', 'classic');
+    useGameStore.getState().continueAfterSolve();
+    expect(useGameStore.getState().currentRound).toBe(1);
   });
 
   it('Time Attack keeps running while hidden', () => {

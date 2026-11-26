@@ -136,8 +136,16 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
     '*': 'times',
   };
 
+  // The tappable box fills this operator's whole share of the gap between
+  // tiles (the visible pill stays the same size), so taps don't have to
+  // land on the small pill itself.
+  const hitBoxClasses =
+    position === 'horizontal'
+      ? 'flex w-full min-h-0 flex-1 items-center justify-center'
+      : 'flex h-full min-w-0 flex-1 items-center justify-center';
+
   return (
-    <motion.div
+    <div
       data-operator={operator}
       data-operator-key={operatorKey}
       role="button"
@@ -152,21 +160,25 @@ export const OperatorIcon: React.FC<OperatorIconProps> = ({
           onClick();
         }
       }}
-      className={`${baseClasses} ${getStateClasses()} focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-1`}
-      initial={{ scale: 1, opacity: 0.7 }}
-      animate={{
-        scale: isSelected ? 1.1 : isInHint ? 1.05 : 1,
-        opacity: isAvailable ? 1 : 0.3,
-      }}
-      transition={{
-        type: 'spring',
-        stiffness: 400,
-        damping: 25,
-      }}
-      whileTap={isAvailable ? { scale: 0.9 } : undefined}
       onClick={isAvailable ? onClick : undefined}
+      className={`${hitBoxClasses} touch-manipulation rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${isAvailable ? 'cursor-pointer' : 'cursor-default'}`}
     >
-      {getOperatorSymbol()}
-    </motion.div>
+      <motion.span
+        aria-hidden
+        className={`${baseClasses} ${getStateClasses()} pointer-events-none`}
+        initial={{ scale: 1, opacity: 0.7 }}
+        animate={{
+          scale: isSelected ? 1.1 : isInHint ? 1.05 : 1,
+          opacity: isAvailable ? 1 : 0.3,
+        }}
+        transition={{
+          type: 'spring',
+          stiffness: 400,
+          damping: 25,
+        }}
+      >
+        {getOperatorSymbol()}
+      </motion.span>
+    </div>
   );
 };

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { describeMiss } from '../../utils/describeMiss';
 
 interface CalculationFeedbackProps {
   calculation: string;
@@ -9,8 +10,21 @@ interface CalculationFeedbackProps {
   isVisible: boolean;
   /** The first step went below zero — explain that this is allowed. */
   negativeStep?: boolean;
+  /**
+   * Correct answer: shows a Continue button that moves to the next round.
+   * Omit it (Time Attack, multiplayer) and the bar just shows the result.
+   */
+  onContinue?: () => void;
+  /** Wrong answer: "Try again" closes the bar and clears the path. */
+  onTryAgain?: () => void;
 }
 
+/**
+ * Duolingo-style feedback: a full-width bar fixed to the bottom of the
+ * screen. It stays until the player acts (Continue / Try again), so the
+ * result can't be missed. Full width also means the slide-in animation can
+ * never knock it off-centre.
+ */
 export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
   calculation,
   result,
@@ -18,21 +32,30 @@ export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
   isCorrect,
   isVisible,
   negativeStep = false,
+  onContinue,
+  onTryAgain,
 }) => {
-  const getResultColor = () => {
-    return isCorrect ? 'text-green-600' : 'text-red-600';
-  };
+  const actionRef = useRef<HTMLButtonElement>(null);
+  const hasAction = isCorrect ? Boolean(onContinue) : Boolean(onTryAgain);
 
-  // Pastel surfaces — keep text dark in both themes. Using `dark:text-gray-100`
-  // here made the expression vanish on `bg-green-50` / `bg-red-50` when
-  // `html.dark` is set (light-on-light).
-  const getSurfaceClasses = () => {
-    return isCorrect
-      ? 'bg-green-50 border-green-200 dark:bg-green-50 dark:border-green-200'
-      : 'bg-red-50 border-red-200 dark:bg-red-50 dark:border-red-200';
-  };
+  // Put keyboard focus on the action so Enter / Space continues.
+  useEffect(() => {
+    if (isVisible && hasAction) actionRef.current?.focus();
+  }, [isVisible, hasAction, isCorrect]);
 
-  const wrongDelta = !isCorrect && result !== null ? result - target : null;
+  const tone = isCorrect
+    ? {
+        bar: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950 dark:border-emerald-800',
+        title: 'text-emerald-700 dark:text-emerald-300',
+        text: 'text-emerald-900 dark:text-emerald-100',
+        button: 'bg-emerald-600 hover:bg-emerald-700 focus-visible:ring-emerald-300',
+      }
+    : {
+        bar: 'bg-rose-50 border-rose-200 dark:bg-rose-950 dark:border-rose-800',
+        title: 'text-rose-700 dark:text-rose-300',
+        text: 'text-rose-900 dark:text-rose-100',
+        button: 'bg-rose-600 hover:bg-rose-700 focus-visible:ring-rose-300',
+      };
 
   return (
     <AnimatePresence>
@@ -41,102 +64,72 @@ export const CalculationFeedback: React.FC<CalculationFeedbackProps> = ({
           role="status"
           aria-live="polite"
           aria-atomic="true"
-          className={`
-            fixed bottom-20 left-1/2 transform -translate-x-1/2
-            px-4 py-2 sm:px-5 sm:py-2 rounded-xl border-2 shadow-lg
-            ${getSurfaceClasses()}
-            z-50 w-fit max-w-[min(calc(100vw-2rem),18rem)] sm:max-w-[min(calc(100vw-2rem),22rem)]
-          `}
-          initial={{ opacity: 0, y: 20, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 20, scale: 0.9 }}
-          transition={{
-            type: 'spring',
-            stiffness: 300,
-            damping: 25,
-          }}
+          className={`fixed inset-x-0 bottom-0 z-50 border-t-2 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-4 shadow-[0_-8px_24px_rgba(15,23,42,0.08)] ${tone.bar}`}
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', stiffness: 380, damping: 34 }}
         >
-          <div
-            className={
-              isCorrect
-                ? 'flex flex-col items-center gap-1.5 text-center sm:flex-row sm:flex-wrap sm:items-center sm:justify-center sm:gap-x-3 sm:gap-y-1'
-                : 'flex flex-col items-center gap-2 text-center'
-            }
-          >
-            <div
-              className={`flex flex-wrap items-baseline justify-center gap-x-2 ${isCorrect ? 'sm:justify-start' : ''}`}
-            >
+          <div className="mx-auto flex max-w-xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex min-w-0 items-start gap-3">
               <span
-                dir="ltr"
-                className="max-w-full overflow-x-auto text-base font-semibold font-sans tabular-nums text-slate-900"
-                style={{ unicodeBidi: 'isolate' }}
+                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white ${
+                  isCorrect ? 'bg-emerald-500' : 'bg-rose-500'
+                }`}
+                aria-hidden
               >
-                {calculation}
+                <svg viewBox="0 0 20 20" fill="none" className="h-5 w-5">
+                  {isCorrect ? (
+                    <path
+                      d="M5 10.5l3.2 3.2L15 7"
+                      stroke="currentColor"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  ) : (
+                    <path
+                      d="M6 6l8 8M14 6l-8 8"
+                      stroke="currentColor"
+                      strokeWidth="2.6"
+                      strokeLinecap="round"
+                    />
+                  )}
+                </svg>
               </span>
-              {result !== null && (
-                <span className={`text-xl font-bold tabular-nums sm:text-2xl ${getResultColor()}`}>
-                  = {result}
-                </span>
-              )}
+              <div className="min-w-0">
+                <p className={`text-lg font-black ${tone.title}`}>
+                  {isCorrect ? 'Correct!' : 'Not quite'}
+                </p>
+                <p className={`text-base font-semibold tabular-nums ${tone.text}`}>
+                  <span dir="ltr" style={{ unicodeBidi: 'isolate' }}>
+                    {calculation}
+                  </span>
+                  {result !== null && <> = {result}</>}
+                </p>
+                {!isCorrect && result !== null && (
+                  <p className={`text-sm font-medium ${tone.text}`}>
+                    {describeMiss(result, target)}
+                  </p>
+                )}
+                {negativeStep && (
+                  <p className="mt-0.5 text-xs font-medium text-slate-600 dark:text-slate-300">
+                    Going below zero on the way is fine — keep working left to right.
+                  </p>
+                )}
+              </div>
             </div>
 
-            {negativeStep && (
-              <p className="max-w-full text-xs font-medium text-slate-600">
-                Going below zero on the way is fine — keep working left to right.
-              </p>
+            {hasAction && (
+              <button
+                ref={actionRef}
+                type="button"
+                onClick={isCorrect ? onContinue : onTryAgain}
+                className={`min-h-[48px] w-full shrink-0 rounded-2xl px-6 text-base font-black uppercase tracking-wide text-white shadow-sm focus:outline-none focus-visible:ring-4 sm:w-auto ${tone.button}`}
+              >
+                {isCorrect ? 'Continue' : 'Try again'}
+              </button>
             )}
-
-            {!isCorrect && result !== null && (
-              <p className="max-w-full text-sm font-semibold text-red-700 dark:text-red-300">
-                Target is {target}.
-                {wrongDelta !== null && (
-                  <>
-                    {' '}
-                    Off by {wrongDelta > 0 ? '+' : ''}
-                    {wrongDelta}.
-                  </>
-                )}
-              </p>
-            )}
-
-            <motion.div
-              className={`flex shrink-0 justify-center ${isCorrect ? 'sm:justify-start' : ''}`}
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              {isCorrect ? (
-                <div className="flex items-center justify-center gap-2 text-green-600">
-                  <svg
-                    className="h-4 w-4 shrink-0 sm:h-5 sm:w-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-sm font-semibold sm:text-base">Correct!</span>
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2 text-red-600">
-                  <svg
-                    className="h-4 w-4 shrink-0 sm:h-5 sm:w-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  <span className="text-sm font-semibold sm:text-base">Try Again</span>
-                </div>
-              )}
-            </motion.div>
           </div>
         </motion.div>
       )}

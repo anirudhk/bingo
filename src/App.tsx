@@ -213,6 +213,8 @@ function App() {
 /** Standard fade-in wrapper for tab/lobby content. */
 const FadeIn: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <motion.div
+    // Full height so screens inside can paint their background to the bottom edge.
+    className="h-full"
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}

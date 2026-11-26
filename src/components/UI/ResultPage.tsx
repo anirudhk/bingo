@@ -132,11 +132,11 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-lime-400 to-emerald-500 text-3xl font-black text-white shadow-xl">
             ✓
           </div>
-          <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#58cc02]">
+          <div className="text-[11px] font-black uppercase tracking-[0.2em] text-green-700">
             Level complete
           </div>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 dark:text-white">
-            Great job!
+            {stars === 3 ? 'Perfect!' : stars === 2 ? 'Great job!' : 'Level complete!'}
           </h1>
           <p className="mt-1 text-sm font-bold text-slate-500 dark:text-slate-300">
             {unit?.title ?? 'Learn'} · {level.title}
@@ -144,6 +144,11 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
           </p>
 
           <StarRow stars={stars} />
+          {stars < 3 && (
+            <p className="-mt-1 mb-2 text-sm font-semibold text-slate-600 dark:text-slate-300">
+              Finish with no wrong answers and no hints for 3 stars.
+            </p>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 6 }}
@@ -174,7 +179,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
                   resetGame();
                   navigate(`/game?level=${nextLevelId}`);
                 }}
-                className="w-full rounded-2xl bg-[#58cc02] px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
+                className="w-full rounded-2xl bg-green-700 px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
               >
                 Next level →
               </motion.button>
@@ -209,7 +214,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
           <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-[1.5rem] bg-gradient-to-br from-lime-400 to-emerald-500 text-3xl shadow-xl">
             {firstTry ? '⭐' : '🏆'}
           </div>
-          <div className="text-[11px] font-black uppercase tracking-[0.2em] text-[#58cc02]">
+          <div className="text-[11px] font-black uppercase tracking-[0.2em] text-green-700">
             Daily puzzle
           </div>
           <h1 className="mt-1 text-3xl font-black tracking-tight text-slate-900 dark:text-white">
@@ -278,7 +283,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
                 resetGame();
                 navigate('/');
               }}
-              className="w-full rounded-2xl bg-[#58cc02] px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
+              className="w-full rounded-2xl bg-green-700 px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
             >
               Back home
             </motion.button>
@@ -361,7 +366,7 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
               resetGame();
               navigate('/game');
             }}
-            className="w-full rounded-2xl bg-[#58cc02] px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
+            className="w-full rounded-2xl bg-green-700 px-4 py-3 text-base font-black text-white shadow-lg shadow-lime-200"
           >
             Play Again
           </motion.button>
@@ -402,7 +407,9 @@ const ResultShell: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 
 const Stat: React.FC<{ label: string; value: string }> = ({ label, value }) => (
   <div className="rounded-2xl bg-slate-50 px-3 py-3 text-left shadow-inner dark:bg-slate-800">
-    <div className="text-[10px] font-black uppercase tracking-wide text-slate-400">{label}</div>
+    <div className="text-[10px] font-black uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      {label}
+    </div>
     <div className="mt-1 text-lg font-black capitalize text-slate-900 dark:text-white">{value}</div>
   </div>
 );

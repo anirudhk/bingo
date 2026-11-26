@@ -66,7 +66,7 @@ export const MixedUnitIntroModal: React.FC<MixedUnitIntroModalProps> = ({ open, 
           type="button"
           autoFocus
           onClick={onDismiss}
-          className="mt-5 w-full rounded-2xl bg-[#58cc02] px-4 py-3 text-sm font-black text-white shadow-lg shadow-lime-200/60 dark:shadow-lime-950/40"
+          className="mt-5 w-full rounded-2xl bg-green-700 px-4 py-3 text-sm font-black text-white shadow-lg shadow-lime-200/60 dark:shadow-lime-950/40"
         >
           Let&apos;s go
         </button>

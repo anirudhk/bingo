@@ -66,6 +66,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   const initializeMultiplayerRound = useGameStore((s) => s.initializeMultiplayerRound);
   const submitSolution = useGameStore((s) => s.submitSolution);
   const recordHint = useGameStore((s) => s.recordHint);
+  const continueAfterSolve = useGameStore((s) => s.continueAfterSolve);
   const setPageHidden = useGameStore((s) => s.setPageHidden);
   const startRoundTimer = useGameStore((s) => s.startRoundTimer);
   const cleanup = useGameStore((s) => s.cleanup);
@@ -90,6 +91,18 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   });
   // After a wrong answer the path stays on screen; the next tap starts over.
   const clearOnNextTapRef = useRef(false);
+  const barAutoDismisses = gameMode === 'timeAttack' || gameMode === 'multiplayer';
+
+  const handleContinue = () => {
+    setShowFeedback(false);
+    clearSelection();
+    continueAfterSolve();
+  };
+
+  const handleTryAgain = () => {
+    setShowFeedback(false);
+    clearSelection();
+  };
   const [hintUsedThisRound, setHintUsedThisRound] = useState(false);
   const [hintTiles, setHintTiles] = useState<Tile[]>([]);
   const [hintOperatorPositions, setHintOperatorPositions] = useState<
@@ -231,6 +244,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   useEffect(() => {
     setHintUsedThisRound(false);
     clearOnNextTapRef.current = false;
+    setShowFeedback(false);
     setSelectedTiles([]);
     setSelectedOperators([]);
     setSelectedOperatorPositions([]);
@@ -703,12 +717,16 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
       clearTimeout(feedbackClearTimeoutRef.current);
     }
     if (!isCorrect) clearOnNextTapRef.current = true;
-    feedbackClearTimeoutRef.current = setTimeout(() => {
-      feedbackClearTimeoutRef.current = null;
-      // Keep a wrong path visible so the player can see what they tried.
-      if (isCorrect) clearSelection();
-      setShowFeedback(false);
-    }, FEEDBACK_CLEAR_DELAY_MS);
+    // The feedback bar normally stays until the player taps Continue / Try
+    // again. Time Attack (speed) and multiplayer (waiting on the opponent)
+    // dismiss it by themselves.
+    if (barAutoDismisses) {
+      feedbackClearTimeoutRef.current = setTimeout(() => {
+        feedbackClearTimeoutRef.current = null;
+        if (isCorrect) clearSelection();
+        setShowFeedback(false);
+      }, FEEDBACK_CLEAR_DELAY_MS);
+    }
   };
 
   const handleCelebrationComplete = () => {
@@ -940,11 +958,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     if (col >= config.gridSize - 1) return null;
 
     return (
-      <div
-        className={`relative z-[1] flex flex-col items-center justify-center ${
-          config.gridSize === 4 ? 'space-y-1.5' : 'space-y-1'
-        }`}
-      >
+      <div className="relative z-[1] flex h-full w-full flex-col items-stretch justify-center">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`h-${row}-${col}-${operator}`}
@@ -968,11 +982,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     if (row >= config.gridSize - 1) return null;
 
     return (
-      <div
-        className={`relative z-[1] flex items-center justify-center ${
-          config.gridSize === 4 ? 'space-x-1.5' : 'space-x-1'
-        }`}
-      >
+      <div className="relative z-[1] flex h-full w-full items-stretch justify-center">
         {config.availableOperators.map((operator) => (
           <OperatorIcon
             key={`v-${row}-${col}-${operator}`}
@@ -1089,29 +1099,31 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
             <div className="flex items-center justify-between gap-3">
               <button
                 onClick={handleBackToLobby}
-                className="rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition-colors hover:bg-slate-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-lime-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                className="min-h-[44px] min-w-[44px] rounded-2xl bg-slate-100 px-3 py-2 text-xs font-black text-slate-600 transition-colors hover:bg-slate-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-lime-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
               >
                 ← Back
               </button>
               <div className="min-w-0 flex-1 text-center">
-                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-[#58cc02] dark:text-lime-300">
+                <div className="text-[10px] font-black uppercase tracking-[0.18em] text-green-700 dark:text-lime-300">
                   {modeLabel}
                 </div>
                 <h1 className="truncate text-lg font-black tracking-tight text-slate-900 dark:text-white">
                   {contextTitle}
                 </h1>
               </div>
-              <div className="rounded-2xl bg-lime-50 px-3 py-2 text-xs font-black text-lime-700 dark:bg-lime-950 dark:text-lime-200">
-                {gameMode === 'timeAttack' ? <TimeAttackTimer /> : <Timer />}
-              </div>
+              {gameMode === 'learning' ? (
+                // No clock on Learn levels: lessons shouldn't feel like a race.
+                <div className="w-16 shrink-0" aria-hidden />
+              ) : (
+                <div className="rounded-2xl bg-lime-50 px-3 py-2 text-xs font-black text-lime-700 dark:bg-lime-950 dark:text-lime-200">
+                  {gameMode === 'timeAttack' ? <TimeAttackTimer /> : <Timer />}
+                </div>
+              )}
             </div>
 
             <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-xs font-black">
               <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
                 {contextMeta}
-              </span>
-              <span className="rounded-full bg-emerald-100 px-3 py-1 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                Round {currentRound}/{totalRounds}
               </span>
               <span className="rounded-full bg-amber-100 px-3 py-1 text-amber-700 dark:bg-amber-950 dark:text-amber-200">
                 Score {score}
@@ -1127,6 +1139,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
           totalRounds={totalRounds}
           pathTiles={config.tilesCount}
           pathOperators={config.operatorsCount}
+          operators={config.availableOperators}
+          roundSolved={roundSolved}
           compact={config.gridSize >= 4}
         />
 
@@ -1313,10 +1327,10 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
               disabled={selectedTiles.length === 0 && selectedOperators.length === 0 && !showHint}
               aria-label="Clear selection"
               title="Clear your current path"
-              className={`min-h-[44px] min-w-[5.5rem] rounded-2xl px-4 py-2 text-sm font-black shadow-md transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-red-300 disabled:cursor-not-allowed ${
+              className={`min-h-[44px] min-w-[5.5rem] rounded-2xl px-4 py-2 text-sm font-black shadow-md transition-colors focus:outline-none focus-visible:ring-4 focus-visible:ring-slate-300 disabled:cursor-not-allowed ${
                 selectedTiles.length === 0 && selectedOperators.length === 0 && !showHint
                   ? 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
-                  : 'bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-500'
+                  : 'bg-white text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-600 dark:hover:bg-slate-700'
               }`}
               whileHover={
                 selectedTiles.length > 0 || selectedOperators.length > 0 || showHint
@@ -1342,6 +1356,8 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
           isCorrect={feedbackData.isCorrect}
           negativeStep={feedbackData.negativeStep}
           isVisible={showFeedback}
+          onContinue={barAutoDismisses ? undefined : handleContinue}
+          onTryAgain={barAutoDismisses ? undefined : handleTryAgain}
         />
       </div>
 

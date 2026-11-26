@@ -34,6 +34,8 @@ interface GameStore extends GameState {
   initializeMultiplayerRound: (difficulty: DifficultyLevel, seed: string) => void;
   submitSolution: (tiles: Tile[], operators: string[]) => boolean;
   nextRound: () => void;
+  /** Player tapped Continue on the "Correct!" bar. No-op unless the round is solved. */
+  continueAfterSolve: () => void;
   resetGame: () => void;
   /** Tear down all timers/timeouts. Call from component unmount and on reset. */
   cleanup: () => void;
@@ -72,6 +74,8 @@ let autoAdvanceTimeout: ReturnType<typeof setTimeout> | null = null;
 // Page visibility: while hidden, the round clock is paused and a due
 // auto-advance waits until the player is back.
 let pageHiddenAt: number | null = null;
+// When the current round was solved (freezes the clock until Continue).
+let roundSolvedAt: number | null = null;
 let advanceWhenVisible = false;
 
 const clearTimeAttackInterval = () => {
@@ -154,6 +158,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Always tear down prior timers before starting a fresh session.
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
     // Quick Game uses the easy config (3x3 grid, 2 tiles + 1 operator) and a
     // 5-round structure — pick-up-and-play (see ADR-002).
@@ -218,6 +223,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   initializeLevel: (levelId: string) => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
     const level = getLevel(levelId);
     if (!level) {
@@ -281,6 +287,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   initializePuzzle: (puzzle: Puzzle) => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
     set({
       grid: cloneGridTiles(puzzle.tiles),
@@ -311,6 +318,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   initializeMultiplayerRound: (difficulty: DifficultyLevel, seed: string) => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
 
     const cfg = { ...DIFFICULTY_CONFIGS[difficulty], totalRounds: 1 };
     const built = generateValidGridFromConfigSeeded(cfg, seed);
@@ -405,7 +413,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return true;
     }
 
-    // Auto-advance after a short delay so the player sees the success feedback.
+    // Freeze the round clock at the moment of the solve: time spent reading
+    // the feedback bar doesn't count.
+    roundSolvedAt = Date.now();
+
+    // Most modes wait for the player to tap Continue (continueAfterSolve).
+    // Time Attack is a speed run, so it moves on by itself after a beat.
+    if (gameMode !== 'timeAttack') return true;
+
     // Tracked so resetGame / cleanup / mode change can cancel it.
     clearAutoAdvance();
     autoAdvanceTimeout = setTimeout(() => {
@@ -418,6 +433,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }, SUCCESS_DELAY_MS);
 
     return true;
+  },
+
+  continueAfterSolve: () => {
+    if (!get().roundSolved || get().gameMode === 'multiplayer') return;
+    clearAutoAdvance();
+    get().nextRound();
   },
 
   nextRound: () => {
@@ -445,7 +466,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
 
     const now = Date.now();
-    const thisRoundMs = roundStartTime ? now - roundStartTime : 0;
+    const roundEnd = roundSolvedAt ?? now;
+    roundSolvedAt = null;
+    const thisRoundMs = roundStartTime ? Math.max(0, roundEnd - roundStartTime) : 0;
     const accumulatedMs = roundsTimeMs + thisRoundMs;
 
     if (currentRound >= totalRounds) {
@@ -494,7 +517,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   cleanup: () => {
     clearTimeAttackInterval();
     clearAutoAdvance();
+    roundSolvedAt = null;
     advanceWhenVisible = false;
+    roundSolvedAt = null;
   },
 
   deductScore: (amount: number) => {
@@ -555,8 +580,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   updateTimer: () => {
-    const { roundStartTime, roundsTimeMs } = get();
-    if (roundStartTime) {
+    const { roundStartTime, roundsTimeMs, roundSolved } = get();
+    if (roundStartTime && !roundSolved) {
       const thisRoundMs = Date.now() - roundStartTime;
       set({ roundTime: thisRoundMs, totalTime: roundsTimeMs + thisRoundMs });
     }

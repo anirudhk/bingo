@@ -70,7 +70,7 @@ export const DailyPuzzleBanner: React.FC = () => {
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        <span className="block text-[11px] font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">
           Daily puzzle · {today}
         </span>
         <span className="block truncate text-[15px] font-semibold text-slate-900 dark:text-white">
