@@ -21,12 +21,14 @@ describe('Number Buddies', () => {
     expect(earnedBuddyIds(empty)).toEqual([]);
   });
 
-  it('first level and 3 stars unlock Sprout and Star Kit', () => {
-    expect(earnedBuddyIds({ ...empty, levels: { 'u1-l1': done(2) } })).toEqual(['sprout']);
-    expect(earnedBuddyIds({ ...empty, levels: { 'u1-l1': done(3) } })).toEqual([
-      'sprout',
-      'star-kit',
-    ]);
+  it('first level unlocks Sprout; Star Kit needs 3 stars on three levels', () => {
+    expect(earnedBuddyIds({ ...empty, levels: { 'u1-l1': done(3) } })).toEqual(['sprout']);
+    const three = { 'u1-l1': done(3), 'u1-l2': done(3), 'u1-l3': done(3) };
+    expect(earnedBuddyIds({ ...empty, levels: three })).toEqual(['sprout', 'star-kit']);
+  });
+
+  it('a perfect first level (5 in a row) does not also unlock Blaze', () => {
+    expect(earnedBuddyIds({ ...empty, bestCombo: 5 })).not.toContain('blaze');
   });
 
   it('finishing every level of Unit 1 unlocks Plus Pup', () => {
@@ -40,7 +42,7 @@ describe('Number Buddies', () => {
   it('combo, daily and Time Attack goals', () => {
     const ids = earnedBuddyIds({
       ...empty,
-      bestCombo: 5,
+      bestCombo: 10,
       daily: { '2026-11-26': { puzzleId: 'p', wrongAttempts: 0, seconds: 30 } },
       dailyStreak: { count: 3, lastPlayedDate: '2026-11-26' },
       playBests: { quickGameBestTimeMs: null, timeAttackBestRounds: 10 },
