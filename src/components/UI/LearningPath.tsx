@@ -6,6 +6,7 @@ import { getLevelProgress, isLevelUnlocked, useProgressStore } from '../../store
 import { LevelNode } from './LevelNode';
 import { UnitHeader, type UnitTone } from './UnitHeader';
 import { DailyPuzzleBanner } from './DailyPuzzleBanner';
+import { BuddiesCard } from './BuddiesCard';
 
 const UNIT_TONES: UnitTone[] = ['emerald', 'sky', 'violet', 'amber', 'rose'];
 
@@ -110,8 +111,9 @@ export const LearningPath: React.FC = () => {
           </button>
         </motion.section>
 
-        <div className="lg:hidden">
+        <div className="space-y-3 lg:hidden">
           <DailyPuzzleBanner />
+          <BuddiesCard />
         </div>
 
         {UNITS.map((unit, unitIdx) => {
@@ -165,6 +167,7 @@ export const LearningPath: React.FC = () => {
 
       <aside className="hidden space-y-4 lg:block">
         <DailyPuzzleBanner />
+        <BuddiesCard />
         <section className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70 dark:bg-slate-900 dark:ring-slate-800">
           <div className="text-sm font-semibold text-slate-900 dark:text-white">Your path</div>
           <div className="mt-3 flex items-baseline justify-between text-sm">

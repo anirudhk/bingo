@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useGameStore } from '../../store/gameStore';
 import { computeStars, useProgressStore } from '../../store/progressStore';
 import { LEVELS, UNITS, getLevel, getNextLevelId } from '../../constants/levels';
@@ -10,6 +10,8 @@ import { buildDailyShareText, shareText, type ShareOutcome } from '../../utils/s
 import { themesUnlockedBetween, type BoardTheme } from '../../constants/boardThemes';
 import { usePrefsStore } from '../../store/prefsStore';
 import { Mascot } from './Mascot';
+import { Buddy } from './Buddy';
+import { getBuddy, type BuddyDef } from '../../constants/buddies';
 
 const formatTime = (milliseconds: number) => {
   const seconds = Math.floor(milliseconds / 1000);
@@ -61,6 +63,8 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
 
   const [xpGained, setXpGained] = useState<number | null>(null);
   const [unlockedThemes, setUnlockedThemes] = useState<BoardTheme[]>([]);
+  const [newBuddies, setNewBuddies] = useState<BuddyDef[]>([]);
+  const syncBuddies = useProgressStore((s) => s.syncBuddies);
   const [shareState, setShareState] = useState<ShareOutcome | null>(null);
 
   const isLearning = gameMode === 'learning' && currentLevelId !== null;
@@ -109,10 +113,10 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
     feedback('complete');
   }, []);
   useEffect(() => {
-    if (unlockedThemes.length === 0) return;
+    if (unlockedThemes.length === 0 && newBuddies.length === 0) return;
     const t = setTimeout(() => feedback('unlock'), 1100);
     return () => clearTimeout(t);
-  }, [unlockedThemes]);
+  }, [unlockedThemes, newBuddies]);
 
   useEffect(() => {
     if (recordedPlayBestsRef.current) return;
@@ -124,6 +128,18 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
       timeAttackRoundsCompleted: timeAttackRoundsCompleted ?? 0,
     });
   }, [gameMode, totalTime, timeAttackRoundsCompleted, recordPlayModeBests]);
+
+  // After this game's progress is saved (effects above run first), unlock
+  // any Number Buddies it earned.
+  const syncedBuddiesRef = useRef(false);
+  useEffect(() => {
+    if (syncedBuddiesRef.current) return;
+    syncedBuddiesRef.current = true;
+    const fresh = syncBuddies()
+      .map(getBuddy)
+      .filter((b): b is BuddyDef => Boolean(b));
+    setNewBuddies(fresh);
+  }, [syncBuddies]);
 
   // ──────────────────────────── Learn-mode result ───────────────────────────
   if (isLearning && level) {
@@ -160,6 +176,9 @@ export const ResultPage: React.FC<ResultPageProps> = ({ dailyCloudResult }) => {
             {xpGained === 0 ? 'Best stars already earned' : `+${xpGained ?? stars * 10} XP`}
           </motion.div>
 
+          {newBuddies.map((buddy) => (
+            <BuddyUnlockedBanner key={buddy.id} buddy={buddy} />
+          ))}
           {unlockedThemes.map((theme) => (
             <ThemeUnlockedBanner key={theme.id} theme={theme} />
           ))}
@@ -447,3 +466,28 @@ const ThemeUnlockedBanner: React.FC<{ theme: BoardTheme }> = ({ theme }) => {
     </motion.div>
   );
 };
+
+/** Shown when this game unlocked a Number Buddy. */
+const BuddyUnlockedBanner: React.FC<{ buddy: BuddyDef }> = ({ buddy }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.9, y: 8 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    transition={{ delay: 1.1, type: 'spring', stiffness: 260, damping: 20 }}
+    className="mt-4 flex items-center gap-3 rounded-2xl bg-orange-50 p-3 text-left ring-1 ring-orange-200 dark:bg-orange-950/40 dark:ring-orange-900"
+    role="status"
+  >
+    <Buddy buddy={buddy} size={52} />
+    <span className="min-w-0 flex-1">
+      <span className="block text-[11px] font-semibold uppercase tracking-wider text-orange-800 dark:text-orange-300">
+        New buddy unlocked
+      </span>
+      <span className="block text-base font-bold text-slate-900 dark:text-white">{buddy.name}</span>
+    </span>
+    <Link
+      to="/buddies"
+      className="shrink-0 rounded-xl bg-orange-500 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-orange-600"
+    >
+      See all
+    </Link>
+  </motion.div>
+);
