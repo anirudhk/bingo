@@ -19,8 +19,11 @@ create function auth.role() returns text language sql stable as
   $$ select coalesce(nullif(current_setting('request.jwt.claim.role', true), ''), 'anon') $$;
 grant usage on schema public, auth to anon, authenticated, service_role;
 grant execute on function auth.uid(), auth.role() to anon, authenticated;
--- Supabase's default privileges: API roles get table access; RLS decides rows.
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+-- Mirror this project's real default privileges: new tables give the API
+-- roles only TRUNCATE / REFERENCES / TRIGGER (no SELECT etc.), so every read
+-- the app needs must be granted explicitly by a migration.
+alter default privileges in schema public grant truncate, references, trigger on tables to anon, authenticated;
+alter default privileges in schema public grant all on tables to service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
 alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
 create publication supabase_realtime;
