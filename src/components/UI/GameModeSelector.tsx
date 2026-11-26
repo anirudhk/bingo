@@ -150,6 +150,34 @@ export const GameModeSelector: React.FC<GameModeSelectorProps> = ({ onSelect, se
           </motion.button>
         ))}
       </section>
+
+      <section
+        aria-label="Classroom"
+        className="mt-6 flex flex-col gap-3 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70 sm:flex-row sm:items-center dark:bg-slate-900 dark:ring-slate-800"
+      >
+        <div className="min-w-0 flex-1">
+          <h2 className="text-base font-black text-slate-900 dark:text-white">Class race</h2>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            A live race for the whole class — students join with a code, no accounts.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => navigate('/join')}
+            className="min-h-[44px] rounded-xl bg-green-700 px-4 text-sm font-black text-white hover:bg-green-800"
+          >
+            Join a class
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/class')}
+            className="min-h-[44px] rounded-xl px-4 text-sm font-black text-slate-700 ring-1 ring-slate-300 hover:bg-slate-50 dark:text-slate-200 dark:ring-slate-600 dark:hover:bg-slate-800"
+          >
+            I&apos;m a teacher
+          </button>
+        </div>
+      </section>
     </div>
   );
 };

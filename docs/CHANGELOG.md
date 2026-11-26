@@ -12,6 +12,11 @@ All notable changes to Grid Genius are documented here. The format follows [Keep
 
 ## [Unreleased] — targeting `v0.3.0` ("Daily Puzzle")
 
+### Added — Class race (2026-11-26)
+
+- **Live classroom mode.** A teacher creates a room (`/class`: difficulty + 3/5/10 minutes) and gets a 6-letter code; students join at `/join` with a nickname as guests (no accounts). Everyone races the same sequence of seeded boards; the projector view shows who joined, a countdown, a live top-10 leaderboard and a final podium.
+- **Server-checked:** every answer is verified (path, gap signs, target) and must match the registered board for that index; boards are solved in order; the server keeps time and refuses late answers. Nicknames: 2–16 letters/digits, unique per room, word-filtered. Rooms are deleted after 7 days. Migration `20261126100000_classroom.sql`.
+
 ### Added — Number Buddies (2026-11-26)
 
 - **13 collectible buddies**, each earned by a clear goal (first level, 3 stars, each unit, 5 in a row, daily solves and streaks, 10 in one Time Attack, plus a secret one). No random drops, nothing to buy. Unlocks are derived from saved progress (`earnedBuddyIds`), stored with their unlock date (progress store v4).
