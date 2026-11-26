@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ButtonGameBoard } from './ButtonGameBoard';
 import { useGameStore } from '../../store/gameStore';
@@ -29,6 +29,23 @@ describe('<ButtonGameBoard /> smoke', () => {
     expect(screen.getByText(/Addition/i)).toBeInTheDocument();
     expect(screen.getByText(/First sum/i)).toBeInTheDocument();
     expect(screen.getByText(/Level 1 of 25/i)).toBeInTheDocument();
+  });
+
+  it('Easy: a one-sign gap still needs the sign tapped before the next number', () => {
+    renderBoard();
+    const tileAt = (r: number, c: number) =>
+      screen.getByLabelText(new RegExp(`^Tile value \\d+, row ${r}, column ${c}`));
+    const pressed = () => document.querySelectorAll('[aria-pressed="true"]').length;
+    fireEvent.click(tileAt(1, 1));
+    expect(pressed()).toBe(1);
+    // The neighbouring number is refused: no sign was tapped yet.
+    fireEvent.click(tileAt(1, 2));
+    expect(pressed()).toBe(1);
+
+    const sign = screen.getAllByRole('button', { name: /between these columns/ })[0];
+    fireEvent.click(sign);
+    expect(sign).toHaveAttribute('aria-pressed', 'true');
+    expect(pressed()).toBe(2);
   });
 
   it('renders the init-error fallback when the store is in an error state', () => {
