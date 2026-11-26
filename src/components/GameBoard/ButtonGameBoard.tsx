@@ -49,6 +49,8 @@ interface ButtonGameBoardProps {
   timerOverride?: React.ReactNode;
   /** Where Back goes (defaults to the mode's lobby). */
   onBack?: () => void;
+  /** Replay a shared game exactly ("beat my time" link). */
+  challengeSeed?: string;
 }
 
 export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
@@ -63,6 +65,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
   labelOverride,
   timerOverride,
   onBack,
+  challengeSeed,
 }) => {
   const navigate = useNavigate();
   const grid = useGameStore((s) => s.grid);
@@ -205,7 +208,9 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
       levelId ??
       (gameMode === 'multiplayer' && multiplayerSeed
         ? `mp::${multiplayerRoundKey ?? multiplayerSeed}`
-        : `${difficulty}::${gameMode}`);
+        : challengeSeed
+          ? `challenge::${challengeSeed}`
+          : `${difficulty}::${gameMode}`);
     if (lastInitKeyRef.current === initKey) {
       return;
     }
@@ -222,7 +227,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
       initializeMultiplayerRound(difficulty, multiplayerSeed);
     } else {
       logger.debug('Initializing game with difficulty:', difficulty, 'mode:', gameMode);
-      initializeGame(difficulty, gameMode);
+      initializeGame(difficulty, gameMode, challengeSeed);
     }
     startRoundTimer();
     return () => {
@@ -236,6 +241,7 @@ export const ButtonGameBoard: React.FC<ButtonGameBoardProps> = ({
     puzzle,
     multiplayerSeed,
     multiplayerRoundKey,
+    challengeSeed,
     initializeGame,
     initializeLevel,
     initializePuzzle,

@@ -77,6 +77,9 @@ const ClassHostSetupPage = lazy(() => classroom().then((m) => ({ default: m.Clas
 const ClassHostRoomPage = lazy(() => classroom().then((m) => ({ default: m.ClassHostRoomPage })));
 const ClassJoinPage = lazy(() => classroom().then((m) => ({ default: m.ClassJoinPage })));
 const ClassPlayPage = lazy(() => classroom().then((m) => ({ default: m.ClassPlayPage })));
+const ChallengePage = lazy(() =>
+  import('./components/UI/ChallengePage').then((m) => ({ default: m.ChallengePage }))
+);
 const BuddiesPage = lazy(() =>
   import('./components/UI/BuddiesPage').then((m) => ({ default: m.BuddiesPage }))
 );
@@ -202,6 +205,7 @@ function App() {
                   <Route path="/play/join/:token" element={<MultiplayerJoinPage />} />
 
                   <Route path="/buddies" element={<BuddiesPage />} />
+                  <Route path="/challenge/:payload" element={<ChallengePage />} />
                   <Route path="/class" element={<ClassHostSetupPage />} />
                   <Route path="/class/host/:roomId" element={<ClassHostRoomPage />} />
                   <Route path="/class/play/:roomId" element={<ClassPlayPage />} />

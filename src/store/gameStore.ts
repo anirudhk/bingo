@@ -19,9 +19,14 @@ import {
 } from '../utils/gridGenerator';
 import { calculatePathResult } from '../utils/calculator';
 import { logger } from '../utils/logger';
+import { newGameSeed } from '../utils/challenge';
 
 interface GameStore extends GameState {
-  initializeGame: (difficulty: DifficultyLevel, gameMode?: GameMode) => void;
+  /**
+   * Start a Play-mode game. Classic and Quick Game boards come from a seed
+   * (random unless given), so a "beat my time" link can replay them exactly.
+   */
+  initializeGame: (difficulty: DifficultyLevel, gameMode?: GameMode, seed?: string) => void;
   /** Initialise a Learn-path level by id. Sets gameMode='learning' and currentLevelId. */
   initializeLevel: (levelId: string) => void;
   /** Initialise a static puzzle. Sets gameMode='dailyPuzzle' and currentPuzzleId.
@@ -112,6 +117,7 @@ const createInitialState = (): GameState => ({
   wrongAttempts: 0,
   hintsUsed: 0,
   comboStreak: 0,
+  gameSeed: null,
   gapOperators: null,
   roundSolved: false,
   currentPuzzleId: null,
@@ -164,7 +170,7 @@ const buildTimeAttackRound = (
 export const useGameStore = create<GameStore>((set, get) => ({
   ...createInitialState(),
 
-  initializeGame: (difficulty: DifficultyLevel, gameMode: GameMode = 'classic') => {
+  initializeGame: (difficulty: DifficultyLevel, gameMode: GameMode = 'classic', seed?: string) => {
     // Always tear down prior timers before starting a fresh session.
     clearTimeAttackInterval();
     clearAutoAdvance();
@@ -178,14 +184,27 @@ export const useGameStore = create<GameStore>((set, get) => ({
     let targetNumbers: number[] = [];
     let grid: Tile[] = [];
     let gaps: GapOperators | null = null;
-    let attempt = 0;
-    while (attempt < MAX_INIT_RETRIES && targetNumbers.length === 0) {
-      attempt += 1;
-      const board = generateValidBoardFromConfig(effectiveConfig);
-      grid = board.grid;
-      gaps = board.gaps;
-      const combinations = getAllCombinationsFromConfig(grid, effectiveConfig, gaps);
-      targetNumbers = generateTargetsFromConfig(combinations, effectiveConfig);
+    // Classic and Quick Game: one seeded board + targets, so the game can be
+    // shared and replayed identically. Time Attack draws fresh random boards.
+    const gameSeed =
+      gameMode === 'classic' || gameMode === 'quickGame' ? (seed ?? newGameSeed()) : null;
+    if (gameSeed) {
+      const built = generateValidGridFromConfigSeeded(effectiveConfig, gameSeed);
+      if (built) {
+        grid = built.grid;
+        gaps = built.gaps;
+        targetNumbers = built.targetNumbers;
+      }
+    } else {
+      let attempt = 0;
+      while (attempt < MAX_INIT_RETRIES && targetNumbers.length === 0) {
+        attempt += 1;
+        const board = generateValidBoardFromConfig(effectiveConfig);
+        grid = board.grid;
+        gaps = board.gaps;
+        const combinations = getAllCombinationsFromConfig(grid, effectiveConfig, gaps);
+        targetNumbers = generateTargetsFromConfig(combinations, effectiveConfig);
+      }
     }
 
     if (targetNumbers.length === 0) {
@@ -207,6 +226,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({
       grid: cloneGridTiles(grid),
       gapOperators: gaps,
+      gameSeed,
       targetNumbers,
       currentTarget: targetNumbers[0],
       currentRound: 1,
@@ -295,6 +315,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       wrongAttempts: 0,
       hintsUsed: 0,
       comboStreak: 0,
+      gameSeed: null,
       gapOperators: null,
       roundSolved: false,
       currentPuzzleId: null,
@@ -328,6 +349,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       wrongAttempts: 0,
       hintsUsed: 0,
       comboStreak: 0,
+      gameSeed: null,
       gapOperators: null,
       roundSolved: false,
       currentPuzzleId: puzzle.id,
@@ -376,6 +398,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       wrongAttempts: 0,
       hintsUsed: 0,
       comboStreak: 0,
+      gameSeed: null,
       gapOperators: gaps,
       roundSolved: false,
       currentPuzzleId: null,
@@ -560,6 +583,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       hintsUsed: state.hintsUsed + 1,
       // A hinted answer doesn't extend the combo.
       comboStreak: 0,
+      gameSeed: null,
     }));
   },
 
